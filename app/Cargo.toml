@@ -1,0 +1,9 @@
+[package]
+name = "app"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+math = {path="../math"}
+csg = {path="../csg"}
+
