@@ -142,3 +142,15 @@ pub fn dacosf(degrees: f32) -> f32 {
 pub fn datanf(degrees: f32) -> f32 {
   degrees.to_radians().atan()
 }
+
+/// Returns true if a and b are within epsilon
+#[inline(always)]
+pub fn approx_eq(a: f64, b: f64, epsilon: f64) -> bool {
+  (a - b).abs() < epsilon
+}
+
+/// Returns true if a and b are within epsilon
+#[inline(always)]
+pub fn approx_eqf(a: f32, b: f32, epsilon: f32) -> bool {
+  (a - b).abs() < epsilon
+}
