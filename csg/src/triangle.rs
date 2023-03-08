@@ -20,13 +20,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod bsp_node;
-mod csg;
-mod mesh;
-mod plane;
-mod polygon;
-mod triangle;
+use math::pt3::Pt3;
 
-pub use {
-  bsp_node::BSPNode, csg::CSG, mesh::Mesh, plane::Plane, polygon::Polygon, triangle::Triangle,
-};
+#[derive(Clone, Copy)]
+pub struct Triangle {
+  pub a: Pt3,
+  pub b: Pt3,
+  pub c: Pt3,
+}
+
+impl Triangle {
+  pub fn new(a: Pt3, b: Pt3, c: Pt3) -> Self {
+    Self { a, b, c }
+  }
+
+  pub fn normal(&self) -> Pt3 {
+    (self.b - self.a).cross(self.c - self.a)
+  }
+}

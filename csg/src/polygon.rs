@@ -20,13 +20,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod bsp_node;
-mod csg;
-mod mesh;
-mod plane;
-mod polygon;
-mod triangle;
+use {crate::plane::Plane, math::pt3::Pt3};
 
-pub use {
-  bsp_node::BSPNode, csg::CSG, mesh::Mesh, plane::Plane, polygon::Polygon, triangle::Triangle,
-};
+#[derive(Clone)]
+pub struct Polygon {
+  pub vertices: Vec<Pt3>,
+  pub plane: Plane,
+}
+
+impl Polygon {
+  pub fn new(vertices: Vec<Pt3>) -> Self {
+    let plane = Plane::from_points(vertices[0], vertices[1], vertices[2]);
+    Self { vertices, plane }
+  }
+
+  pub fn flip(&mut self) {
+    let n_verts = self.vertices.len();
+    let mut reversed = Vec::with_capacity(n_verts);
+    for i in 0..n_verts {
+      reversed.push(self.vertices[n_verts - 1 - i]);
+    }
+    self.vertices = reversed;
+    self.plane.flip();
+  }
+}
