@@ -20,12 +20,4 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use csg::{Mesh, CSG};
-
-fn main() {
-  let cube1 = CSG::from_triangles(Mesh::cube(1.0, 1.0, 1.0, true).triangles);
-  let cube2 = CSG::from_triangles(Mesh::cube(1.0, 1.0, 1.0, false).triangles);
-  let res = cube2 - cube1;
-  let res = Mesh::from_triangles(res.into_triangles());
-  res.save_stl_bin("out/cube.stl");
-}
+fn main() {}

@@ -22,11 +22,18 @@
 
 mod bsp_node;
 mod csg;
+mod ear_clip;
 mod mesh;
 mod plane;
 mod polygon;
 mod triangle;
 
 pub use {
-  bsp_node::BSPNode, csg::CSG, mesh::Mesh, plane::Plane, polygon::Polygon, triangle::Triangle,
+  bsp_node::BSPNode,
+  csg::CSG,
+  ear_clip::{triangulate2d, triangulate3d},
+  mesh::Mesh,
+  plane::Plane,
+  polygon::Polygon,
+  triangle::Triangle,
 };
