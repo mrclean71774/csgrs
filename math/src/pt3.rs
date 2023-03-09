@@ -65,7 +65,7 @@ impl VecPt3 for Vec<Pt3> {
 }
 
 /// A 3D point.
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Pt3 {
   pub x: f64,
   pub y: f64,

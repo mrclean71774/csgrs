@@ -25,7 +25,7 @@ use crate::pt3f::Pt3f;
 use crate::rng::MersenneTwister;
 
 /// A $D point.
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Pt4f {
   pub x: f32,
   pub y: f32,
