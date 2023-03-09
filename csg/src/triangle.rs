@@ -37,4 +37,22 @@ impl Triangle {
   pub fn normal(&self) -> Pt3 {
     (self.b - self.a).cross(self.c - self.a)
   }
+
+  pub fn translate(&mut self, p: Pt3) {
+    self.a += p;
+    self.b += p;
+    self.c += p;
+  }
+}
+
+pub trait VecTriangle {
+  fn translate(&mut self, p: Pt3);
+}
+
+impl VecTriangle for Vec<Triangle> {
+  fn translate(&mut self, p: Pt3) {
+    for t in self {
+      t.translate(p);
+    }
+  }
 }

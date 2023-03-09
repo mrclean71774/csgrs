@@ -21,8 +21,14 @@
 // SOFTWARE.
 
 use {
-  crate::{csg::CSG, triangle::Triangle},
-  math::pt3::{Pt3, VecPt3},
+  crate::{
+    csg::CSG,
+    triangle::{Triangle, VecTriangle},
+  },
+  math::{
+    pt2::{Pt2, VecPt2},
+    pt3::{Pt3, VecPt3},
+  },
   std::io::{Read, Write},
 };
 
@@ -82,6 +88,110 @@ impl Mesh {
     if !center {
       vertices.translate(s);
     }
+    Self::from_verts(&vertices, &indices)
+  }
+
+  pub fn sphere(r: f64, segments: usize) -> Self {
+    let points = Pt2::arc(Pt2::new(0.0, -r), 180.0, segments);
+    Self::revolve(&points, segments)
+  }
+
+  /// Create an arrow!
+  pub fn arrow(
+    shaft_radius: f64,
+    shaft_length: f64,
+    head_radius: f64,
+    head_start: f64,
+    head_length: f64,
+    segments: usize,
+    center: bool,
+  ) -> Self {
+    let mut points_2d = Vec::new();
+    points_2d.push(Pt2::new(0.0, 0.0));
+    points_2d.push(Pt2::new(shaft_radius, 0.0));
+    points_2d.push(Pt2::new(shaft_radius, shaft_length));
+    points_2d.push(Pt2::new(shaft_radius + head_radius, head_start));
+    points_2d.push(Pt2::new(0.0, shaft_length + head_length));
+    if center {
+      points_2d.translate(
+        Pt2::new(
+          0.0,
+          -(shaft_length - (shaft_length - head_start) + head_length),
+        ) / 2.0,
+      );
+    }
+    Self::revolve(&points_2d, segments)
+  }
+
+  pub fn cylinder(r1: f64, r2: f64, height: f64, segments: usize, center: bool) -> Self {
+    let mut result = Self::revolve(
+      &vec![
+        Pt2::new(0.0, -height / 2.0),
+        Pt2::new(r1, -height / 2.0),
+        Pt2::new(r2, height / 2.0),
+        Pt2::new(0.0, height / 2.0),
+      ],
+      segments,
+    );
+    if !center {
+      result.triangles.translate(Pt3::new(0.0, 0.0, height / 2.0));
+    }
+    result
+  }
+
+  /// Revolve a string of 2D points around the Z axis after
+  /// mapping the 2D Y axis to the 3D Z axis.  This follows
+  /// OpenSCAD's transition from 2D to 3D.  The points are
+  /// assumed to start and end on the Z axis.  Who knows what
+  /// happens if they are not!
+  pub fn revolve(points: &Vec<Pt2>, segments: usize) -> Self {
+    assert!(points.len() > 2);
+    let stride = points.len() - 2;
+    let mut vertices = Vec::new();
+    vertices.push(points[0].to_xz());
+    vertices.push(points[points.len() - 1].to_xz());
+    for i in 1..(points.len() - 1) {
+      vertices.push(points[i].to_xz());
+    }
+    let mut indices = Vec::new();
+    for segment in 1..segments {
+      for i in 1..(points.len() - 1) {
+        let v = &points[i].to_xz();
+        vertices.push(Pt3::new(
+          v.x
+            * (segment as f64 * 360.0 / segments as f64)
+              .to_radians()
+              .cos(),
+          v.x
+            * (segment as f64 * 360.0 / segments as f64)
+              .to_radians()
+              .sin(),
+          v.z,
+        ));
+      }
+      let index = segment * stride + 2;
+      indices.append(&mut vec![index - stride, 0, index]);
+      indices.append(&mut vec![index + stride - 1, 1, index - 1]);
+      for i in 0..(stride - 1) {
+        let p0 = index + i + 1 - stride;
+        let p1 = index + i + 1;
+        let p2 = index + i - stride;
+        let p3 = index + i;
+        indices.append(&mut vec![p0, p2, p1]);
+        indices.append(&mut vec![p1, p2, p3]);
+      }
+    }
+    for i in 0..(stride - 1) {
+      let p0 = vertices.len() + i + 1 - stride;
+      let p1 = i + 3;
+      let p2 = vertices.len() + i - stride;
+      let p3 = 2 + i;
+      indices.append(&mut vec![p0, p2, p1]);
+      indices.append(&mut vec![p1, p2, p3]);
+    }
+    indices.append(&mut vec![0, 2, vertices.len() - stride]);
+    indices.append(&mut vec![1, vertices.len() - 1, stride + 1]);
+
     Self::from_verts(&vertices, &indices)
   }
 
@@ -227,5 +337,53 @@ impl Mesh {
 
   fn parse_ascii(_data: Vec<u8>) -> Self {
     panic!("Loading ascii stl files is not implemented.")
+  }
+}
+
+impl std::ops::Add for Mesh {
+  type Output = Self;
+
+  fn add(self, rhs: Self) -> Self::Output {
+    let a = CSG::from_mesh(self);
+    let b = CSG::from_mesh(rhs);
+    Mesh::from_csg(a + b)
+  }
+}
+
+impl std::ops::AddAssign for Mesh {
+  fn add_assign(&mut self, rhs: Self) {
+    *self = self.clone() + rhs;
+  }
+}
+
+impl std::ops::Sub for Mesh {
+  type Output = Self;
+
+  fn sub(self, rhs: Self) -> Self::Output {
+    let a = CSG::from_mesh(self);
+    let b = CSG::from_mesh(rhs);
+    Mesh::from_csg(a - b)
+  }
+}
+
+impl std::ops::SubAssign for Mesh {
+  fn sub_assign(&mut self, rhs: Self) {
+    *self = self.clone() - rhs;
+  }
+}
+
+impl std::ops::Mul for Mesh {
+  type Output = Self;
+
+  fn mul(self, rhs: Self) -> Self::Output {
+    let a = CSG::from_mesh(self);
+    let b = CSG::from_mesh(rhs);
+    Mesh::from_csg(a * b)
+  }
+}
+
+impl std::ops::MulAssign for Mesh {
+  fn mul_assign(&mut self, rhs: Self) {
+    *self = self.clone() * rhs
   }
 }
