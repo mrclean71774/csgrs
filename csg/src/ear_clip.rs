@@ -45,7 +45,11 @@ fn in_triangle(v: &(usize, Pt2), a: &(usize, Pt2), b: &(usize, Pt2), c: &(usize,
     return false;
   }
 
-  alpha + beta >= 1.0
+  let gamma = 1.0 - alpha - beta;
+  if gamma < 0.0 {
+    return false;
+  }
+  true
 }
 
 pub fn triangulate3d(vertices: &Vec<Pt3>, normal: Pt3) -> Vec<usize> {
@@ -119,7 +123,6 @@ pub fn triangulate3d(vertices: &Vec<Pt3>, normal: Pt3) -> Vec<usize> {
     _ => {}
   }
 
-  let mut reflex: Vec<u16> = Vec::new();
   let mut triangles: Vec<usize> = Vec::with_capacity((vertices.len() - 2) * 3);
 
   let mut left = polygon[0].1;
@@ -150,7 +153,6 @@ pub fn triangulate3d(vertices: &Vec<Pt3>, normal: Pt3) -> Vec<usize> {
   assert!(is_ccw(&tri));
 
   while polygon.len() >= 3 {
-    reflex.clear();
     let mut eartip = -1i16;
     let mut index = -1i16;
 
@@ -173,41 +175,24 @@ pub fn triangulate3d(vertices: &Vec<Pt3>, normal: Pt3) -> Vec<usize> {
 
       let tri = vec![polygon[p as usize], *i, polygon[n as usize]];
       if !is_ccw(&tri) {
-        reflex.push(index as u16);
         continue;
       }
 
       let mut ear = true;
-      for j in &reflex {
-        if *j == p || *j == n {
+      for j in ((index + 1) as usize)..polygon.len() {
+        let v = &polygon[j];
+        if std::ptr::eq(v, &polygon[p as usize])
+          || std::ptr::eq(v, &polygon[n as usize])
+          || std::ptr::eq(v, &polygon[index as usize])
+        {
           continue;
         }
-        if in_triangle(
-          &polygon[*j as usize],
-          &polygon[p as usize],
-          i,
-          &polygon[n as usize],
-        ) {
+        if in_triangle(v, &polygon[p as usize], i, &polygon[n as usize]) {
           ear = false;
           break;
         }
       }
 
-      if ear {
-        for j in ((index + 1) as usize)..polygon.len() {
-          let v = &polygon[j];
-          if std::ptr::eq(v, &polygon[p as usize])
-            || std::ptr::eq(v, &polygon[n as usize])
-            || std::ptr::eq(v, &polygon[index as usize])
-          {
-            continue;
-          }
-          if in_triangle(v, &polygon[p as usize], i, &polygon[n as usize]) {
-            ear = false;
-            break;
-          }
-        }
-      }
       if ear {
         eartip = index;
       }
@@ -232,6 +217,7 @@ pub fn triangulate3d(vertices: &Vec<Pt3>, normal: Pt3) -> Vec<usize> {
     polygon.remove(eartip as usize);
   } // while polygon.len()
 
+  assert!(triangles.len() == (vertices.len() - 2) * 3);
   triangles
 }
 
@@ -242,7 +228,6 @@ pub fn triangulate2d(vertices: &Vec<Pt2>) -> Vec<usize> {
     polygon.push((i, *v));
   }
 
-  let mut reflex: Vec<u16> = Vec::new();
   let mut triangles: Vec<usize> = Vec::with_capacity((vertices.len() - 2) * 3);
 
   let mut left = polygon[0].1;
@@ -273,7 +258,6 @@ pub fn triangulate2d(vertices: &Vec<Pt2>) -> Vec<usize> {
   assert!(is_ccw(&tri));
 
   while polygon.len() >= 3 {
-    reflex.clear();
     let mut eartip = -1i16;
     let mut index = -1i16;
 
@@ -296,41 +280,25 @@ pub fn triangulate2d(vertices: &Vec<Pt2>) -> Vec<usize> {
 
       let tri = vec![polygon[p as usize], *i, polygon[n as usize]];
       if !is_ccw(&tri) {
-        reflex.push(index as u16);
         continue;
       }
 
       let mut ear = true;
-      for j in &reflex {
-        if *j == p || *j == n {
+
+      for j in ((index + 1) as usize)..polygon.len() {
+        let v = &polygon[j];
+        if std::ptr::eq(v, &polygon[p as usize])
+          || std::ptr::eq(v, &polygon[n as usize])
+          || std::ptr::eq(v, &polygon[index as usize])
+        {
           continue;
         }
-        if in_triangle(
-          &polygon[*j as usize],
-          &polygon[p as usize],
-          i,
-          &polygon[n as usize],
-        ) {
+        if in_triangle(v, &polygon[p as usize], i, &polygon[n as usize]) {
           ear = false;
           break;
         }
       }
 
-      if ear {
-        for j in ((index + 1) as usize)..polygon.len() {
-          let v = &polygon[j];
-          if std::ptr::eq(v, &polygon[p as usize])
-            || std::ptr::eq(v, &polygon[n as usize])
-            || std::ptr::eq(v, &polygon[index as usize])
-          {
-            continue;
-          }
-          if in_triangle(v, &polygon[p as usize], i, &polygon[n as usize]) {
-            ear = false;
-            break;
-          }
-        }
-      }
       if ear {
         eartip = index;
       }

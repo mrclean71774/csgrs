@@ -28,6 +28,7 @@ use {
     triangle::{Triangle, VecTriangle},
   },
   math::{
+    dcos, dsin,
     pt2::{Pt2, VecPt2},
     pt3::{Pt3, VecPt3},
   },
@@ -160,14 +161,8 @@ impl Mesh {
       for i in 1..(points.len() - 1) {
         let v = &points[i].to_xz();
         vertices.push(Pt3::new(
-          v.x
-            * (segment as f64 * 360.0 / segments as f64)
-              .to_radians()
-              .cos(),
-          v.x
-            * (segment as f64 * 360.0 / segments as f64)
-              .to_radians()
-              .sin(),
+          v.x * dcos(segment as f64 * 360.0 / segments as f64),
+          v.x * dsin(segment as f64 * 360.0 / segments as f64),
           v.z,
         ));
       }
@@ -209,8 +204,8 @@ impl Mesh {
       indices.append(&mut triangulate3d(&points3d, Pt3::new(0.0, -1.0, 0.0)));
     }
     for segment in 1..segments {
-      let s = (a * segment as f64).to_radians().sin();
-      let c = (a * segment as f64).to_radians().cos();
+      let s = dsin(a * segment as f64);
+      let c = dcos(a * segment as f64);
       for p in 0..points3d.len() {
         vertices.push(Pt3::new(
           points3d[p].x * c,
@@ -227,8 +222,8 @@ impl Mesh {
     }
     if angle != 360.0 {
       let mut pts: Vec<Pt3> = points3d.into_iter().rev().collect();
-      let s = (a * segments as f64).to_radians().sin();
-      let c = (a * segments as f64).to_radians().cos();
+      let s = dsin(a * segments as f64);
+      let c = dcos(a * segments as f64);
       for i in 0..pts.len() {
         pts[i] = Pt3::new(pts[i].x * c, pts[i].x * s, pts[i].z);
       }
@@ -258,6 +253,76 @@ impl Mesh {
       }
     }
 
+    Self::from_verts(&vertices, &indices)
+  }
+
+  pub fn rotate_twist_extrude(
+    points: &Vec<Pt2>,
+    angle: f64,
+    twists: i32,
+    rot_center: Pt2,
+    segments: usize,
+  ) -> Self {
+    assert!(angle >= 0.0 && angle <= 360.0);
+    assert!(segments >= 3);
+    let points3d: Vec<Pt3> = points.iter().map(|p| Pt3::new(p.x, 0.0, p.y)).collect();
+    let points3d_len = points3d.len();
+    let a = angle / segments as f64;
+    let ta = 360.0 * twists as f64 / segments as f64;
+    let mut vertices = points3d.clone();
+    let mut indices = Vec::new();
+    if angle != 360.0 {
+      indices.append(&mut triangulate3d(&points3d, Pt3::new(0.0, -1.0, 0.0)));
+    }
+    for segment in 1..segments {
+      let s = dsin(a * segment as f64);
+      let c = dcos(a * segment as f64);
+      for p in 0..points3d.len() {
+        let mut pt = points3d[p];
+        pt = pt - Pt3::new(rot_center.x, 0.0, rot_center.y);
+        pt.rotate_y(ta * segment as f64);
+        pt = pt + Pt3::new(rot_center.x, 0.0, rot_center.y);
+        vertices.push(Pt3::new(pt.x * c, pt.x * s, pt.z));
+        let p3 = segment * points3d_len + p;
+        let p1 = segment * points3d_len + ((p + 1) % points3d_len);
+        let p2 = (segment - 1) * points3d_len + p;
+        let p0 = (segment - 1) * points3d_len + ((p + 1) % points3d_len);
+        indices.append(&mut vec![p1, p0, p2]);
+        indices.append(&mut vec![p1, p2, p3]);
+      }
+    }
+    if angle != 360.0 {
+      let mut pts: Vec<Pt3> = points3d.into_iter().rev().collect();
+      let s = dsin(a * segments as f64);
+      let c = dcos(a * segments as f64);
+      for i in 0..pts.len() {
+        pts[i] = Pt3::new(pts[i].x * c, pts[i].x * s, pts[i].z);
+      }
+      let nml = Pt3::new(0.0, -1.0, 0.0).rotated_z(angle + 180.0);
+      let mut indies = triangulate3d(&pts, nml);
+      for index in &mut indies {
+        *index += vertices.len();
+      }
+      indices.append(&mut indies);
+      vertices.append(&mut pts);
+      for p in 0..points3d_len {
+        let p3 = vertices.len() - points3d_len * 2 + p;
+        let p1 = vertices.len() - points3d_len * 2 + ((p + 1) % points3d_len);
+        let p2 = vertices.len() - points3d_len + (points3d_len - 1 - p);
+        let p0 = vertices.len() - points3d_len + (points3d_len - 1 - ((p + 1) % points3d_len));
+        indices.append(&mut vec![p2, p0, p1]);
+        indices.append(&mut vec![p3, p2, p1]);
+      }
+    } else {
+      for p in 0..points3d.len() {
+        let p3 = p;
+        let p1 = (p + 1) % points3d.len();
+        let p2 = vertices.len() - points3d_len + p;
+        let p0 = vertices.len() - points3d_len + ((p + 1) % points3d_len);
+        indices.append(&mut vec![p1, p0, p2]);
+        indices.append(&mut vec![p1, p2, p3]);
+      }
+    }
     Self::from_verts(&vertices, &indices)
   }
 
