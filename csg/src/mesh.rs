@@ -62,8 +62,24 @@ impl Mesh {
     Self::from_triangles(triangles)
   }
 
-  pub fn translate(&mut self, pt: Pt3) {
+  pub fn translate(&mut self, pt: Pt3) -> &mut Self {
     self.triangles.translate(pt);
+    self
+  }
+
+  pub fn rotate_x(&mut self, degrees: f64) -> &mut Self {
+    self.triangles.rotate_x(degrees);
+    self
+  }
+
+  pub fn rotate_y(&mut self, degrees: f64) -> &mut Self {
+    self.triangles.rotate_y(degrees);
+    self
+  }
+
+  pub fn rotate_z(&mut self, degrees: f64) -> &mut Self {
+    self.triangles.rotate_z(degrees);
+    self
   }
 
   pub fn cube(x: f64, y: f64, z: f64, center: bool) -> Self {
@@ -144,6 +160,42 @@ impl Mesh {
       result.triangles.translate(Pt3::new(0.0, 0.0, height / 2.0));
     }
     result
+  }
+
+  pub fn chamfer(size: f64, length: f64, oversize: f64) -> Self {
+    Self::linear_extrude(&Pt2::chamfer(size, oversize), length)
+  }
+
+  pub fn external_circle_chamfer(
+    size: f64,
+    radius: f64,
+    degrees: f64,
+    oversize: f64,
+    segments: usize,
+  ) -> Self {
+    let mut points2 = Pt2::chamfer(size, oversize);
+    points2
+      .rotate(90.0)
+      .translate(Pt2::new(radius + size / 2.0 + oversize / 2.0, -oversize));
+    Self::rotate_extrude(&points2, degrees, segments)
+  }
+
+  pub fn external_cylinder_chamfer(
+    size: f64,
+    radius: f64,
+    height: f64,
+    oversize: f64,
+    segments: usize,
+    center: bool,
+  ) -> Self {
+    let mut result = Self::external_circle_chamfer(size, radius, 360.0, oversize, segments);
+    let mut result1 = Self::external_circle_chamfer(size, radius, 360.0, oversize, segments);
+    result1.rotate_x(180.0);
+    result1.translate(Pt3::new(0.0, 0.0, height));
+    if center {
+      result.translate(Pt3::new(0.0, 0.0, -height / 2.0));
+    }
+    result + result1
   }
 
   pub fn linear_extrude(profile: &Vec<Pt2>, length: f64) -> Self {

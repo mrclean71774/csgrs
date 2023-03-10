@@ -43,16 +43,59 @@ impl Triangle {
     self.b += p;
     self.c += p;
   }
+
+  pub fn rotate_x(&mut self, degrees: f64) {
+    self.a.rotate_x(degrees);
+    self.b.rotate_x(degrees);
+    self.c.rotate_x(degrees);
+  }
+
+  pub fn rotate_y(&mut self, degrees: f64) {
+    self.a.rotate_y(degrees);
+    self.b.rotate_y(degrees);
+    self.c.rotate_y(degrees);
+  }
+
+  pub fn rotate_z(&mut self, degrees: f64) {
+    self.a.rotate_z(degrees);
+    self.b.rotate_z(degrees);
+    self.c.rotate_z(degrees);
+  }
 }
 
 pub trait VecTriangle {
-  fn translate(&mut self, p: Pt3);
+  fn translate(&mut self, p: Pt3) -> &mut Self;
+  fn rotate_x(&mut self, degrees: f64) -> &mut Self;
+  fn rotate_y(&mut self, degrees: f64) -> &mut Self;
+  fn rotate_z(&mut self, degrees: f64) -> &mut Self;
 }
 
 impl VecTriangle for Vec<Triangle> {
-  fn translate(&mut self, p: Pt3) {
-    for t in self {
+  fn translate(&mut self, p: Pt3) -> &mut Self {
+    for t in self.iter_mut() {
       t.translate(p);
     }
+    self
+  }
+
+  fn rotate_x(&mut self, degrees: f64) -> &mut Self {
+    for t in self.iter_mut() {
+      t.rotate_x(degrees);
+    }
+    self
+  }
+
+  fn rotate_y(&mut self, degrees: f64) -> &mut Self {
+    for t in self.iter_mut() {
+      t.rotate_y(degrees);
+    }
+    self
+  }
+
+  fn rotate_z(&mut self, degrees: f64) -> &mut Self {
+    for t in self.iter_mut() {
+      t.rotate_z(degrees);
+    }
+    self
   }
 }
