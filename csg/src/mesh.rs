@@ -20,15 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::triangulate3d;
-
 use {
   crate::{
     csg::CSG,
+    ear_clip::triangulate3d,
     triangle::{Triangle, VecTriangle},
   },
   math::{
     dcos, dsin,
+    mt4::Mt4,
     pt2::{Pt2, VecPt2},
     pt3::{Pt3, VecPt3},
   },
@@ -60,6 +60,10 @@ impl Mesh {
       ));
     }
     Self::from_triangles(triangles)
+  }
+
+  pub fn translate(&mut self, pt: Pt3) {
+    self.triangles.translate(pt);
   }
 
   pub fn cube(x: f64, y: f64, z: f64, center: bool) -> Self {
@@ -140,6 +144,92 @@ impl Mesh {
       result.triangles.translate(Pt3::new(0.0, 0.0, height / 2.0));
     }
     result
+  }
+
+  pub fn linear_extrude(profile: &Vec<Pt2>, length: f64) -> Self {
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+    let profile_len = profile.len();
+    let mut profile3d = Vec::with_capacity(profile_len);
+
+    for i in 0..profile_len {
+      profile3d.push(profile[i].as_pt3(0.0));
+      vertices.push(profile[profile_len - 1 - i].as_pt3(0.0));
+    }
+    indices.append(&mut triangulate3d(&vertices, Pt3::new(0.0, 0.0, -1.0)));
+    for i in 0..profile_len {
+      vertices.push(profile[i].as_pt3(length));
+    }
+    for p0 in 0..profile_len {
+      let p1 = (p0 + 1) % profile_len;
+      let p2 = profile_len + profile_len - 1 - p0;
+      let p3 = profile_len + (profile_len - p0) % profile_len;
+      indices.append(&mut vec![p3, p2, p0]);
+      indices.append(&mut vec![p2, p1, p0]);
+    }
+    let mut indies = triangulate3d(&profile3d, Pt3::new(0.0, 0.0, 1.0));
+    for indie in &mut indies {
+      *indie += profile_len;
+    }
+    indices.append(&mut indies);
+    Self::from_verts(&vertices, &indices)
+  }
+
+  pub fn linear_twist_extrude(
+    profile: &Vec<Pt2>,
+    length: f64,
+    twist: f64,
+    segments: usize,
+  ) -> Self {
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+    let profile: Vec<Pt3> = profile.iter().map(|p| p.as_pt3(0.0)).collect();
+    let profile_len = profile.len();
+    let profile_rev: Vec<Pt3> = profile.clone().into_iter().rev().collect();
+    let z_step = length / segments as f64;
+    let twist_a = twist / segments as f64;
+    indices.append(&mut triangulate3d(&profile_rev, Pt3::new(0.0, 0.0, -1.0)));
+
+    for i in 0..profile_len {
+      vertices.push(profile_rev[i]);
+    }
+
+    for segment in 1..segments {
+      for i in 0..profile_len {
+        vertices.push(
+          profile_rev[i].rotated_z(twist_a * segment as f64)
+            + Pt3::new(0.0, 0.0, z_step * segment as f64),
+        );
+        let p0 = (segment - 1) * profile_len + i;
+        let p1 = (segment - 1) * profile_len + ((i + 1) % profile_len);
+        let p2 = segment * profile_len + i;
+        let p3 = segment * profile_len + ((i + 1) % profile_len);
+        indices.append(&mut vec![p3, p1, p0]);
+        indices.append(&mut vec![p0, p2, p3]);
+      }
+    }
+
+    for i in 0..profile_len {
+      vertices.push(
+        profile[i].rotated_z(twist_a * segments as f64)
+          + Pt3::new(0.0, 0.0, z_step * segments as f64),
+      );
+    }
+    for i in 0..profile_len {
+      let p0 = (segments - 1) * profile_len + i;
+      let p1 = (segments - 1) * profile_len + ((i + 1) % profile_len);
+      let p2 = segments * profile_len + (profile_len - 1 - i);
+      let p3 = segments * profile_len + (profile_len - 1 - ((i + 1) % profile_len));
+      indices.append(&mut vec![p3, p1, p0]);
+      indices.append(&mut vec![p0, p2, p3]);
+    }
+    let mut indies = triangulate3d(&profile, Pt3::new(0.0, 0.0, 1.0));
+    for indie in &mut indies {
+      *indie += vertices.len() - profile_len;
+    }
+    indices.append(&mut indies);
+
+    Self::from_verts(&vertices, &indices)
   }
 
   /// Revolve a string of 2D points around the Z axis after
@@ -259,7 +349,7 @@ impl Mesh {
   pub fn rotate_twist_extrude(
     points: &Vec<Pt2>,
     angle: f64,
-    twists: i32,
+    twist: f64,
     rot_center: Pt2,
     segments: usize,
   ) -> Self {
@@ -268,7 +358,7 @@ impl Mesh {
     let points3d: Vec<Pt3> = points.iter().map(|p| Pt3::new(p.x, 0.0, p.y)).collect();
     let points3d_len = points3d.len();
     let a = angle / segments as f64;
-    let ta = 360.0 * twists as f64 / segments as f64;
+    let ta = twist / segments as f64;
     let mut vertices = points3d.clone();
     let mut indices = Vec::new();
     if angle != 360.0 {
@@ -295,7 +385,11 @@ impl Mesh {
       let mut pts: Vec<Pt3> = points3d.into_iter().rev().collect();
       let s = dsin(a * segments as f64);
       let c = dcos(a * segments as f64);
+
       for i in 0..pts.len() {
+        pts[i] -= Pt3::new(rot_center.x, 0.0, rot_center.y);
+        pts[i].rotate_y(ta * segments as f64);
+        pts[i] += Pt3::new(rot_center.x, 0.0, rot_center.y);
         pts[i] = Pt3::new(pts[i].x * c, pts[i].x * s, pts[i].z);
       }
       let nml = Pt3::new(0.0, -1.0, 0.0).rotated_z(angle + 180.0);
@@ -323,6 +417,112 @@ impl Mesh {
         indices.append(&mut vec![p1, p2, p3]);
       }
     }
+    Self::from_verts(&vertices, &indices)
+  }
+
+  pub fn sweep(profile: &Vec<Pt2>, path: &Vec<Pt3>, twist_degrees: f64) -> Self {
+    let profile: Vec<Pt3> = profile.iter().map(|p| p.as_pt3(0.0)).collect();
+    let profile_len = profile.len();
+    let mut vertices: Vec<Pt3> = Vec::new();
+    let mut indices: Vec<usize> = Vec::new();
+    let twist_angle = twist_degrees / (path.len() - 1) as f64;
+
+    let m = Mt4::look_at_matrix_lh(path[0], path[1], Pt3::new(0.0, 0.0, 1.0));
+    let profile_rev = profile.clone().into_iter().rev().collect::<Vec<Pt3>>();
+    for p in &profile_rev {
+      vertices.push((m * p.as_pt4(1.0)).as_pt3() + path[0]);
+    }
+    indices.append(&mut triangulate3d(&vertices, path[0] - path[1]));
+
+    for path_i in 1..path.len() - 1 {
+      let m = Mt4::look_at_matrix_lh(path[path_i - 1], path[path_i + 1], Pt3::new(0.0, 0.0, 1.0));
+      for profile_i in 0..profile_len {
+        let point = profile_rev[profile_i].rotated_z(twist_angle * path_i as f64);
+        vertices.push((m * point.as_pt4(1.0)).as_pt3() + path[path_i % path.len()]);
+        let p3 = path_i * profile_len + profile_i;
+        let p1 = path_i * profile_len + ((profile_i + 1) % profile_len);
+        let p2 = (path_i - 1) * profile_len + profile_i;
+        let p0 = (path_i - 1) * profile_len + ((profile_i + 1) % profile_len);
+        indices.append(&mut vec![p1, p0, p2]);
+        indices.append(&mut vec![p1, p2, p3]);
+      }
+    }
+
+    let m = Mt4::look_at_matrix_lh(
+      path[path.len() - 2],
+      path[path.len() - 1],
+      Pt3::new(0.0, 0.0, 1.0),
+    );
+    let mut last_verts = Vec::with_capacity(profile_len);
+    for profile_i in 0..profile_len {
+      let point = profile[profile_i].rotated_z(twist_angle * (path.len() - 1) as f64);
+      vertices.push((m * point.as_pt4(1.0)).as_pt3() + path[path.len() - 1]);
+      last_verts.push((m * point.as_pt4(1.0)).as_pt3() + path[path.len() - 1]);
+      let p3 = (path.len() - 1) * profile_len + (profile_len - 1 - profile_i);
+      let p1 = (path.len() - 1) * profile_len + (profile_len - 1 - ((profile_i + 1) % profile_len));
+      let p2 = (path.len() - 2) * profile_len + profile_i;
+      let p0 = (path.len() - 2) * profile_len + ((profile_i + 1) % profile_len);
+      indices.append(&mut vec![p1, p0, p2]);
+      indices.append(&mut vec![p1, p2, p3]);
+    }
+
+    let mut indies = triangulate3d(&last_verts, path[path.len() - 1] - path[path.len() - 2]);
+    for indie in &mut indies {
+      *indie += vertices.len() - profile_len;
+    }
+    indices.append(&mut indies);
+
+    Self::from_verts(&vertices, &indices)
+  }
+
+  pub fn sweep_closed(profile: &Vec<Pt2>, path: &Vec<Pt3>, twists: i32) -> Self {
+    assert!(path.len() >= 4);
+    let profile: Vec<Pt3> = profile.iter().map(|p| p.as_pt3(0.0)).collect();
+    let mut vertices: Vec<Pt3> = Vec::new();
+    let mut indices: Vec<usize> = Vec::new();
+    let twist_angle = 360.0 * twists as f64 / (path.len()) as f64;
+
+    let m = Mt4::look_at_matrix_rh(path[path.len() - 1], path[1], Pt3::new(0.0, 0.0, 1.0));
+    for p in &profile {
+      vertices.push((m * p.as_pt4(1.0)).as_pt3() + path[0]);
+    }
+
+    for path_i in 1..path.len() - 1 {
+      let m = Mt4::look_at_matrix_rh(path[path_i - 1], path[path_i + 1], Pt3::new(0.0, 0.0, 1.0));
+      for profile_i in 0..profile.len() {
+        let point = profile[profile_i].rotated_z(twist_angle * path_i as f64);
+        vertices.push((m * point.as_pt4(1.0)).as_pt3() + path[path_i]);
+        let p3 = path_i * profile.len() + profile_i;
+        let p1 = path_i * profile.len() + ((profile_i + 1) % profile.len());
+        let p2 = (path_i - 1) * profile.len() + profile_i;
+        let p0 = (path_i - 1) * profile.len() + ((profile_i + 1) % profile.len());
+        indices.append(&mut vec![p1, p0, p2]);
+        indices.append(&mut vec![p1, p2, p3]);
+      }
+    }
+
+    let m = Mt4::look_at_matrix_rh(path[path.len() - 2], path[0], Pt3::new(0.0, 0.0, 1.0));
+    for profile_i in 0..profile.len() {
+      let point = profile[profile_i].rotated_z(twist_angle * (path.len() - 1) as f64);
+      vertices.push((m * point.as_pt4(1.0)).as_pt3() + path[path.len() - 1]);
+      let p3 = (path.len() - 1) * profile.len() + profile_i;
+      let p1 = (path.len() - 1) * profile.len() + ((profile_i + 1) % profile.len());
+      let p2 = (path.len() - 2) * profile.len() + profile_i;
+      let p0 = (path.len() - 2) * profile.len() + ((profile_i + 1) % profile.len());
+      indices.append(&mut vec![p1, p0, p2]);
+      indices.append(&mut vec![p1, p2, p3]);
+    }
+    for profile_i in 0..profile.len() {
+      let point = profile[profile_i].rotated_z(twist_angle * path.len() as f64);
+      vertices.push((m * point.as_pt4(1.0)).as_pt3() + path[path.len() - 1]);
+      let p3 = profile_i;
+      let p1 = (profile_i + 1) % profile.len();
+      let p2 = (path.len() - 1) * profile.len() + profile_i;
+      let p0 = (path.len() - 1) * profile.len() + ((profile_i + 1) % profile.len());
+      indices.append(&mut vec![p1, p0, p2]);
+      indices.append(&mut vec![p1, p2, p3]);
+    }
+
     Self::from_verts(&vertices, &indices)
   }
 
