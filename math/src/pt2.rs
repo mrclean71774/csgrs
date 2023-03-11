@@ -380,12 +380,12 @@ impl Pt2 {
   pub fn chamfer(size: f64, oversize: f64) -> Vec<Self> {
     vec![
       Self::new(0.0, 0.0),
-      Self::new(0.0, size + oversize),
-      Self::new(oversize, size + oversize),
-      Self::new(oversize, size),
-      Self::new(size, oversize),
-      Self::new(size + oversize, oversize),
       Self::new(oversize + size, 0.0),
+      Self::new(size + oversize, oversize),
+      Self::new(size, oversize),
+      Self::new(oversize, size),
+      Self::new(oversize, size + oversize),
+      Self::new(0.0, size + oversize),
     ]
   }
 }
