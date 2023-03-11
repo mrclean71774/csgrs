@@ -22,25 +22,41 @@
 
 use math::{approx_eq, pt2::Pt2, pt3::Pt3};
 
+/// Test if winding order is counter clockwise.
+///
+/// pts: The points of the polygon.
+///
+/// return: True if ccw else false.
 fn is_ccw(pts: &Vec<(usize, Pt2)>) -> bool {
   (pts[1].1.x - pts[0].1.x) * (pts[2].1.y - pts[0].1.y)
     - (pts[2].1.x - pts[0].1.x) * (pts[1].1.y - pts[0].1.y)
     > 0.0
 }
 
-fn in_triangle(v: &(usize, Pt2), a: &(usize, Pt2), b: &(usize, Pt2), c: &(usize, Pt2)) -> bool {
+/// Check if a point is within a triangle.
+///
+/// p: The point to check.
+///
+/// a: The first vertex of the triangle in ccw order.
+///
+/// b: The second vertex of the triangle.
+///
+/// c: The third vertex of the triangle.
+///
+/// return: True if the point is within the triangle else false.   
+fn in_triangle(p: &(usize, Pt2), a: &(usize, Pt2), b: &(usize, Pt2), c: &(usize, Pt2)) -> bool {
   let mut denom = (b.1.y - c.1.y) * (a.1.x - c.1.x) + (c.1.x - b.1.x) * (a.1.y - c.1.y);
   if approx_eq(denom, 0.0, 1.0e-5) {
     return true;
   }
   denom = 1.0 / denom;
 
-  let alpha = denom * ((b.1.y - c.1.y) * (v.1.x - c.1.x) + (c.1.x - b.1.x) * (v.1.y - c.1.y));
+  let alpha = denom * ((b.1.y - c.1.y) * (p.1.x - c.1.x) + (c.1.x - b.1.x) * (p.1.y - c.1.y));
   if alpha < 0.0 {
     return false;
   }
 
-  let beta = denom * ((c.1.y - a.1.y) * (v.1.x - c.1.x) + (a.1.x - c.1.x) * (v.1.y - c.1.y));
+  let beta = denom * ((c.1.y - a.1.y) * (p.1.x - c.1.x) + (a.1.x - c.1.x) * (p.1.y - c.1.y));
   if beta < 0.0 {
     return false;
   }
@@ -52,6 +68,13 @@ fn in_triangle(v: &(usize, Pt2), a: &(usize, Pt2), b: &(usize, Pt2), c: &(usize,
   true
 }
 
+/// Triangulate a 3D polygon
+///
+/// vertices: The vertices of the polygon.
+///
+/// normal: The normal of the polygon.
+///
+/// return: An array of indices into the given vertex array.
 pub fn triangulate3d(vertices: &Vec<Pt3>, normal: Pt3) -> Vec<usize> {
   assert!(vertices.len() > 3);
   const PX: u8 = 1;
@@ -67,15 +90,13 @@ pub fn triangulate3d(vertices: &Vec<Pt3>, normal: Pt3) -> Vec<usize> {
     } else {
       nml_type = NX;
     }
-  }
-  if normal.y.abs() >= normal.x.abs() && normal.y.abs() >= normal.z.abs() {
+  } else if normal.y.abs() >= normal.x.abs() && normal.y.abs() >= normal.z.abs() {
     if normal.y >= 0.0 {
       nml_type = PY;
     } else {
       nml_type = NY;
     }
-  }
-  if normal.z.abs() >= normal.x.abs() && normal.z.abs() >= normal.y.abs() {
+  } else if normal.z.abs() >= normal.x.abs() && normal.z.abs() >= normal.y.abs() {
     if normal.z >= 0.0 {
       nml_type = PZ;
     } else {
@@ -221,6 +242,11 @@ pub fn triangulate3d(vertices: &Vec<Pt3>, normal: Pt3) -> Vec<usize> {
   triangles
 }
 
+/// Triangulate a 2D polygon
+///
+/// vertices: The vertices of the polygon.
+///
+/// return: An array of indices into the given vertex array.
 pub fn triangulate2d(vertices: &Vec<Pt2>) -> Vec<usize> {
   assert!(vertices.len() > 3);
   let mut polygon = Vec::with_capacity(vertices.len());
