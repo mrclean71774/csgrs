@@ -20,6 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+//! Meshes are composed of triangles only. The triangles are using ccw winding.
+//! All 2d profiles that are used to create meshes are also specified in ccw
+//! order as viewed down the Z axis. Boolean mesh operations are '+' for union,
+//! '-' for difference, and '*' for intersection.
+
 use {
   crate::{
     csg::CSG,
@@ -38,20 +43,39 @@ use {
   },
 };
 
+/// A mesh composed of triangles.
 #[derive(Clone)]
 pub struct Mesh {
   pub triangles: Vec<Triangle>,
 }
 
 impl Mesh {
+  /// Creates a mesh from a list of triangles.
+  ///
+  /// triangles: The triangles used to create the mesh.
+  ///
+  /// return: The resulting mesh.
   pub fn from_triangles(triangles: Vec<Triangle>) -> Self {
     Self { triangles }
   }
 
+  /// Creates a mesh from a CSG object.
+  ///
+  /// csg: The CSG object.
+  ///
+  /// return: The mesh.
   pub fn from_csg(csg: CSG) -> Self {
     Self::from_triangles(csg.into_triangles())
   }
 
+  /// Creates a mesh from a list of vertices and an index that specifies
+  /// the triagles.
+  ///
+  /// vertices: The 3D points of the mesh.
+  ///
+  /// indices: The list of indices into the vertices. Always a multiple of three long.
+  ///
+  /// return: The mesh.
   pub fn from_verts(vertices: &Vec<Pt3>, indices: &Vec<usize>) -> Self {
     assert!(indices.len() % 3 == 0);
     let mut triangles = Vec::with_capacity(indices.len() / 3);
@@ -65,26 +89,58 @@ impl Mesh {
     Self::from_triangles(triangles)
   }
 
-  pub fn translate(&mut self, pt: Pt3) -> &mut Self {
-    self.triangles.translate(pt);
+  /// Translate a mesh by the given vector.
+  ///
+  /// v: The translation vector.
+  ///
+  /// return: A mutable reference to the mesh.
+  pub fn translate(&mut self, v: Pt3) -> &mut Self {
+    self.triangles.translate(v);
     self
   }
 
+  /// Rotate a mesh around the X axis.
+  ///
+  /// degrees: The degrees of rotation.
+  ///
+  /// return: A mutable reference to the mesh.
   pub fn rotate_x(&mut self, degrees: f64) -> &mut Self {
     self.triangles.rotate_x(degrees);
     self
   }
 
+  /// Rotate a mesh around the Y axis.
+  ///
+  /// degrees: The degrees of rotation.
+  ///
+  /// return: A mutable reference to the mesh.
   pub fn rotate_y(&mut self, degrees: f64) -> &mut Self {
     self.triangles.rotate_y(degrees);
     self
   }
 
+  /// Rotate a mesh around the Z axis.
+  ///
+  /// degrees: The degrees of rotation.
+  ///
+  /// return: A mutable reference to the mesh.
   pub fn rotate_z(&mut self, degrees: f64) -> &mut Self {
     self.triangles.rotate_z(degrees);
     self
   }
 
+  /// Creates a cube primitive.
+  ///
+  /// x: The X dimension of the cube.
+  ///
+  /// y: The Y dimension of the cube.
+  ///
+  /// z: The Z dimension of the cube.
+  ///
+  /// center: If true the cube is centered at the world origin else
+  /// the cube is created in the all posative octant of the world.
+  ///
+  /// return: The mesh.
   pub fn cube(x: f64, y: f64, z: f64, center: bool) -> Self {
     let s = Pt3::new(x, y, z) / 2.0;
     let mut vertices = vec![
@@ -117,12 +173,38 @@ impl Mesh {
     Self::from_verts(&vertices, &indices)
   }
 
+  /// Creates a sphere primitive centered at the world origin.
+  ///
+  /// r: The radius of the sphere.
+  ///  
+  /// segments: The number of segments in a circle.
+  ///
+  /// return: The mesh.
   pub fn sphere(r: f64, segments: usize) -> Self {
-    let points = Pt2::arc(Pt2::new(0.0, -r), 180.0, segments);
+    let points = Pt2::arc(Pt2::new(0.0, -r), 180.0, segments / 2);
     Self::revolve(&points, segments)
   }
 
-  /// Create an arrow!
+  /// Create an arrow shape.
+  ///
+  /// shaft_radius: The radius of the shaft portion.
+  ///
+  /// shaft_length: The length of the shaft.
+  ///
+  /// head_radius: The radius of the largest part of the arrow head.
+  ///
+  /// head_start: How far up the shaft the largest part of the arrow head is.
+  /// Having the head start before or after the shaft_length will produce different
+  /// head shapes.
+  ///
+  /// head_length: The total length of the arrow head.
+  ///
+  /// segments: The number of segments in a circle.
+  ///
+  /// center: When true the arrow is centered at the world origen else the arrow
+  /// "sits" on the world origin.
+  ///
+  /// return: The mesh.
   pub fn arrow(
     shaft_radius: f64,
     shaft_length: f64,
@@ -149,6 +231,20 @@ impl Mesh {
     Self::revolve(&points_2d, segments)
   }
 
+  /// Creates a cylinder or cone.
+  ///
+  /// r1: The radius at the bottom of the cylinder.
+  ///
+  /// r2: The radius at the top of the cylinder.
+  ///
+  /// height: The height of the cylinder.
+  ///
+  /// segments: The number of segments in a circle.
+  ///
+  /// center: When true the cylinder is centered at the world origin else the cylinder
+  /// "sits" on the world origin.
+  ///
+  /// return: The mesh.
   pub fn cylinder(r1: f64, r2: f64, height: f64, segments: usize, center: bool) -> Self {
     let mut result = Self::revolve(
       &vec![
@@ -165,15 +261,35 @@ impl Mesh {
     result
   }
 
+  /// Creates a linear shape that can be used to chamfer a corner.
+  ///
+  /// size: The height and width of the angled part of the chamfer.
+  ///
+  /// oversize: How much non-angled part there is on the chamfer.
+  ///
+  /// return: The mesh.
   pub fn chamfer(size: f64, length: f64, oversize: f64) -> Self {
     Self::linear_extrude(&Pt2::chamfer(size, oversize), length)
   }
 
+  /// Creates a curved chamfer shape.
+  ///
+  /// size: The size of the angled part of the chamfer profile.
+  ///
+  /// oversize: How much non-angled part there is on the chamfer.
+  ///
+  /// radius: The radius of the arc that the chamfer takes.
+  ///
+  /// degrees: The degrees of the arc that the chamfer is extruded through.
+  ///
+  /// segments: The number of segments in a circle.
+  ///
+  /// return: The mesh.
   pub fn external_circle_chamfer(
     size: f64,
+    oversize: f64,
     radius: f64,
     degrees: f64,
-    oversize: f64,
     segments: usize,
   ) -> Self {
     let mut points2 = Pt2::chamfer(size, oversize);
@@ -183,16 +299,26 @@ impl Mesh {
     Self::rotate_extrude(&points2, degrees, segments)
   }
 
+  /// Creates two external circle chamfers for chamfering a cylinder.
+  ///
+  /// size: The size of the angled part of the chamfer profile.
+  ///
+  /// radius: The radius of the cylinder to be chamfered.
+  ///
+  /// height: The height of the cylinder to be chamfered.
+  ///
+  /// segments: The number of segments in a circle.
+  ///
+  /// return: The mesh.
   pub fn external_cylinder_chamfer(
     size: f64,
     radius: f64,
     height: f64,
-    oversize: f64,
     segments: usize,
     center: bool,
   ) -> Self {
-    let mut result = Self::external_circle_chamfer(size, radius, 360.0, oversize, segments);
-    let mut result1 = Self::external_circle_chamfer(size, radius, 360.0, oversize, segments);
+    let mut result = Self::external_circle_chamfer(size, radius, 360.0, 1.0, segments);
+    let mut result1 = Self::external_circle_chamfer(size, radius, 360.0, 1.0, segments);
     result1.rotate_x(180.0);
     result1.translate(Pt3::new(0.0, 0.0, height));
     if center {
@@ -201,6 +327,18 @@ impl Mesh {
     result + result1
   }
 
+  /// Create a regular polygon.
+  ///
+  /// n_sides: The number of sides for the polygon.
+  ///
+  /// radius: The distance from the center of the polygon to the center of a side.
+  ///
+  /// height: The height of the polygon.
+  ///
+  /// center: When true the polygon is centered at the world origin else the polygon "sits"
+  /// on the world origin.
+  ///
+  /// return: The mesh;
   pub fn circumscribed_polygon(n_sides: usize, radius: f64, height: f64, center: bool) -> Self {
     let pts = Pt2::circumscribed_polygon(n_sides, radius);
     let mut polygon = Self::linear_extrude(&pts, height);
@@ -210,7 +348,35 @@ impl Mesh {
     polygon
   }
 
-  pub fn linear_extrude(profile: &Vec<Pt2>, length: f64) -> Self {
+  /// Create a regular polygon.
+  ///
+  /// n_sides: The number of sides for the polygon.
+  ///
+  /// radius: The distance from the center of the polygon to an exterior point.
+  ///
+  /// height: The height of the polygon.
+  ///
+  /// center: When true the polygon is centered at the world origin else the polygon "sits"
+  /// on the world origin.
+  ///
+  /// return: The mesh;
+  pub fn inscribed_polygon(n_sides: usize, radius: f64, height: f64, center: bool) -> Self {
+    let pts = Pt2::inscribed_polygon(n_sides, radius);
+    let mut polygon = Self::linear_extrude(&pts, height);
+    if center {
+      polygon.translate(Pt3::new(0.0, 0.0, -height / 2.0));
+    }
+    polygon
+  }
+
+  /// Extrude a 2D profile along the positive Z axis.
+  ///  
+  /// profile: The 2D profile to be extruded.
+  ///
+  /// height: The height of the resulting shape.
+  ///
+  /// return: The mesh.
+  pub fn linear_extrude(profile: &Vec<Pt2>, height: f64) -> Self {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     let profile_len = profile.len();
@@ -222,7 +388,7 @@ impl Mesh {
     }
     indices.append(&mut triangulate3d(&vertices, Pt3::new(0.0, 0.0, -1.0)));
     for i in 0..profile_len {
-      vertices.push(profile[i].as_pt3(length));
+      vertices.push(profile[i].as_pt3(height));
     }
     for p0 in 0..profile_len {
       let p1 = (p0 + 1) % profile_len;
@@ -296,24 +462,26 @@ impl Mesh {
     Self::from_verts(&vertices, &indices)
   }
 
-  /// Revolve a string of 2D points around the Z axis after
-  /// mapping the 2D Y axis to the 3D Z axis.  This follows
-  /// OpenSCAD's transition from 2D to 3D.  The points are
-  /// assumed to start and end on the Z axis.  Who knows what
-  /// happens if they are not!
-  pub fn revolve(points: &Vec<Pt2>, segments: usize) -> Self {
-    assert!(points.len() > 2);
-    let stride = points.len() - 2;
+  /// Spin a profile around the Z axis to create a shape.
+  ///
+  /// profile: The 2D profile. Should start and end at x=0.0.
+  ///
+  /// segments: The number of segments in a circle.
+  ///
+  /// return: The mesh.
+  pub fn revolve(profile: &Vec<Pt2>, segments: usize) -> Self {
+    assert!(profile.len() > 2);
+    let stride = profile.len() - 2;
     let mut vertices = Vec::new();
-    vertices.push(points[0].to_xz());
-    vertices.push(points[points.len() - 1].to_xz());
-    for i in 1..(points.len() - 1) {
-      vertices.push(points[i].to_xz());
+    vertices.push(profile[0].to_xz());
+    vertices.push(profile[profile.len() - 1].to_xz());
+    for i in 1..(profile.len() - 1) {
+      vertices.push(profile[i].to_xz());
     }
     let mut indices = Vec::new();
     for segment in 1..segments {
-      for i in 1..(points.len() - 1) {
-        let v = &points[i].to_xz();
+      for i in 1..(profile.len() - 1) {
+        let v = &profile[i].to_xz();
         vertices.push(Pt3::new(
           v.x * dcos(segment as f64 * 360.0 / segments as f64),
           v.x * dsin(segment as f64 * 360.0 / segments as f64),
@@ -346,15 +514,24 @@ impl Mesh {
     Self::from_verts(&vertices, &indices)
   }
 
-  pub fn rotate_extrude(points: &Vec<Pt2>, angle: f64, segments: usize) -> Self {
-    assert!(angle >= 0.0 && angle <= 360.0);
+  /// Rotate a 2D profile around the Z axis.
+  ///
+  /// profile: The 2D profile to extrude. Should be located in the positive X.
+  ///
+  /// degrees: The degrees of rotation.
+  ///
+  /// segments: The number of segments in a circle.
+  ///
+  /// return: The mesh.
+  pub fn rotate_extrude(profile: &Vec<Pt2>, degrees: f64, segments: usize) -> Self {
+    assert!(degrees >= 0.0 && degrees <= 360.0);
     assert!(segments >= 3);
-    let points3d: Vec<Pt3> = points.iter().map(|p| Pt3::new(p.x, 0.0, p.y)).collect();
+    let points3d: Vec<Pt3> = profile.iter().map(|p| Pt3::new(p.x, 0.0, p.y)).collect();
     let points3d_len = points3d.len();
-    let a = angle / segments as f64;
+    let a = degrees / segments as f64;
     let mut vertices = points3d.clone();
     let mut indices = Vec::new();
-    if angle != 360.0 {
+    if degrees != 360.0 {
       indices.append(&mut triangulate3d(&points3d, Pt3::new(0.0, -1.0, 0.0)));
     }
     for segment in 1..segments {
@@ -374,14 +551,14 @@ impl Mesh {
         indices.append(&mut vec![p1, p2, p3]);
       }
     }
-    if angle != 360.0 {
+    if degrees != 360.0 {
       let mut pts: Vec<Pt3> = points3d.into_iter().rev().collect();
       let s = dsin(a * segments as f64);
       let c = dcos(a * segments as f64);
       for i in 0..pts.len() {
         pts[i] = Pt3::new(pts[i].x * c, pts[i].x * s, pts[i].z);
       }
-      let nml = Pt3::new(0.0, -1.0, 0.0).rotated_z(angle + 180.0);
+      let nml = Pt3::new(0.0, -1.0, 0.0).rotated_z(degrees + 180.0);
       let mut indies = triangulate3d(&pts, nml);
       for index in &mut indies {
         *index += vertices.len();
@@ -410,22 +587,36 @@ impl Mesh {
     Self::from_verts(&vertices, &indices)
   }
 
+  /// Rotate a 2D profile around the Z axis.
+  ///
+  /// profile: The 2D profile to extrude. Should be located in the positive X.
+  ///
+  /// extrude_degrees: The degrees of rotation.
+  ///
+  /// twist_degrees: The degrees of twist in the shape. If extrude degrees = 360 then
+  /// twist_degrees should be a multiple of 360.
+  ///
+  /// rotation_center: The point that the profile is twisted around.
+  ///
+  /// segments: The number of segments in a circle.
+  ///
+  /// return: The mesh.
   pub fn rotate_twist_extrude(
-    points: &Vec<Pt2>,
-    angle: f64,
-    twist: f64,
-    rot_center: Pt2,
+    profile: &Vec<Pt2>,
+    extrude_degrees: f64,
+    twist_degrees: f64,
+    roatation_center: Pt2,
     segments: usize,
   ) -> Self {
-    assert!(angle >= 0.0 && angle <= 360.0);
+    assert!(extrude_degrees >= 0.0 && extrude_degrees <= 360.0);
     assert!(segments >= 3);
-    let points3d: Vec<Pt3> = points.iter().map(|p| Pt3::new(p.x, 0.0, p.y)).collect();
+    let points3d: Vec<Pt3> = profile.iter().map(|p| Pt3::new(p.x, 0.0, p.y)).collect();
     let points3d_len = points3d.len();
-    let a = angle / segments as f64;
-    let ta = twist / segments as f64;
+    let a = extrude_degrees / segments as f64;
+    let ta = twist_degrees / segments as f64;
     let mut vertices = points3d.clone();
     let mut indices = Vec::new();
-    if angle != 360.0 {
+    if extrude_degrees != 360.0 {
       indices.append(&mut triangulate3d(&points3d, Pt3::new(0.0, -1.0, 0.0)));
     }
     for segment in 1..segments {
@@ -433,9 +624,9 @@ impl Mesh {
       let c = dcos(a * segment as f64);
       for p in 0..points3d.len() {
         let mut pt = points3d[p];
-        pt = pt - Pt3::new(rot_center.x, 0.0, rot_center.y);
+        pt = pt - Pt3::new(roatation_center.x, 0.0, roatation_center.y);
         pt.rotate_y(ta * segment as f64);
-        pt = pt + Pt3::new(rot_center.x, 0.0, rot_center.y);
+        pt = pt + Pt3::new(roatation_center.x, 0.0, roatation_center.y);
         vertices.push(Pt3::new(pt.x * c, pt.x * s, pt.z));
         let p3 = segment * points3d_len + p;
         let p1 = segment * points3d_len + ((p + 1) % points3d_len);
@@ -445,18 +636,18 @@ impl Mesh {
         indices.append(&mut vec![p1, p2, p3]);
       }
     }
-    if angle != 360.0 {
+    if extrude_degrees != 360.0 {
       let mut pts: Vec<Pt3> = points3d.into_iter().rev().collect();
       let s = dsin(a * segments as f64);
       let c = dcos(a * segments as f64);
 
       for i in 0..pts.len() {
-        pts[i] -= Pt3::new(rot_center.x, 0.0, rot_center.y);
+        pts[i] -= Pt3::new(roatation_center.x, 0.0, roatation_center.y);
         pts[i].rotate_y(ta * segments as f64);
-        pts[i] += Pt3::new(rot_center.x, 0.0, rot_center.y);
+        pts[i] += Pt3::new(roatation_center.x, 0.0, roatation_center.y);
         pts[i] = Pt3::new(pts[i].x * c, pts[i].x * s, pts[i].z);
       }
-      let nml = Pt3::new(0.0, -1.0, 0.0).rotated_z(angle + 180.0);
+      let nml = Pt3::new(0.0, -1.0, 0.0).rotated_z(extrude_degrees + 180.0);
       let mut indies = triangulate3d(&pts, nml);
       for index in &mut indies {
         *index += vertices.len();
@@ -484,6 +675,16 @@ impl Mesh {
     Self::from_verts(&vertices, &indices)
   }
 
+  /// Sweeps a profile through a set of points.
+  ///
+  /// NOTE: A problem shows up when sweeping from vertical to horizontal.  A work around
+  /// is to sweep horizontally and then rotate the resulting mesh.
+  ///
+  /// profile: The 2d points that are swept along the path.
+  ///
+  /// path: The 3D path the profile is swept along.
+  ///
+  /// return: The resulting mesh.
   pub fn sweep(profile: &Vec<Pt2>, path: &Vec<Pt3>, twist_degrees: f64) -> Self {
     let profile: Vec<Pt3> = profile.iter().map(|p| p.as_pt3(0.0)).collect();
     let profile_len = profile.len();
@@ -539,6 +740,16 @@ impl Mesh {
     Self::from_verts(&vertices, &indices)
   }
 
+  /// Sweeps a profile around a set of points and connects the ends.
+  ///
+  /// NOTE: A problem shows up when sweeping from vertical to horizontal.  A work around
+  /// is to sweep horizontally and then rotate the resulting mesh.
+  ///
+  /// profile: The 2d points that are swept along the path.
+  ///
+  /// path: The 3D path the profile is swept along.
+  ///
+  /// return: The resulting mesh.
   pub fn sweep_closed(profile: &Vec<Pt2>, path: &Vec<Pt3>, twists: i32) -> Self {
     assert!(path.len() >= 4);
     let profile: Vec<Pt3> = profile.iter().map(|p| p.as_pt3(0.0)).collect();
@@ -590,6 +801,9 @@ impl Mesh {
     Self::from_verts(&vertices, &indices)
   }
 
+  /// Saves the mesh as an binary stl file.
+  ///
+  /// path: The path of the file relative to the working directory of the executable.
   pub fn save_stl_bin(&self, path: &str) {
     let mut header: Vec<u8> = vec![0; 80];
     let mut v: Vec<u8> = Vec::new();
@@ -634,6 +848,9 @@ impl Mesh {
     file.flush().unwrap();
   }
 
+  /// Saves the mesh as an ascii stl file.
+  ///
+  /// path: The path of the file relative to the working directory of the executable.
   pub fn save_stl_ascii(&self, path: &str) {
     let mut v: Vec<u8> = Vec::new();
     v.append(&mut b"solid ".to_vec());
@@ -686,6 +903,11 @@ impl Mesh {
     file.flush().unwrap();
   }
 
+  /// Load an stl file.
+  ///
+  /// path: The path of the file relative to the working directory of the executable.
+  ///
+  /// return: The mesh.
   pub fn load_stl(path: &str) -> Self {
     let mut file = std::fs::File::open(path).unwrap();
     let mut data = Vec::new();
@@ -698,6 +920,11 @@ impl Mesh {
     }
   }
 
+  /// Parse the binary stl data.
+  ///
+  /// data: The bytes of the file.
+  ///
+  /// return: The mesh.
   fn parse_binary(data: Vec<u8>) -> Self {
     let ptr = &data[80] as *const u8 as *const u32;
     let n_triangles = unsafe { *ptr };
@@ -787,13 +1014,15 @@ fn lerp(start: Pt3, end: Pt3, n_steps: usize, step: usize) -> Pt3 {
   start + ((end - start) / n_steps as f64 * step as f64)
 }
 
-/// Returns the dictionary for the given M size. This function always returns a valid
+/// Returns the dictionary for the given M size.
+///
+/// This function always returns a valid
 /// dictionary by giving the next smallest size if the requested size is not found. If
 /// a size smaller than the smallest is requested the smallest size in dict is returned.
 ///
-/// :param m: The size of the thread you want dict for e.g. 6 for M6 screw threads.
+/// m: The size of the thread you want dict for e.g. 6 for M6 screw threads.
 ///
-/// :return: The dictionary of thread attributes.
+/// return: The dictionary of thread attributes.
 fn m_table_lookup(m: i32) -> HashMap<&'static str, f64> {
   let m_table = m_table();
   let mut m = m;
@@ -811,23 +1040,20 @@ fn m_table_lookup(m: i32) -> HashMap<&'static str, f64> {
 
 /// Calculates the thread height from the given pitch.
 ///
-/// :param pitch: The pitch of the threads.
-/// :type pitch: float
+/// pitch: The pitch of the threads.
 ///
-/// :return: The height of the threads.
+/// return: The height of the threads.
 fn thread_height_from_pitch(pitch: f64) -> f64 {
   3.0f64.sqrt() / 2.0 * pitch
 }
 
 ///  Calculates the dMin of a thread based on the dMaj and pitch.
 ///
-///  :param d_maj: The dMaj of the threads.
-///  :type d_maj: float
+///  d_maj: The dMaj of the threads.
 ///
-///  :param pitch: The pitch of the threads.
-///  :type pitch: float
+///  pitch: The pitch of the threads.
 ///
-///  :return: The dMin of the threads.
+///  return: The dMin of the threads.
 fn d_min_from_d_maj_pitch(d_maj: f64, pitch: f64) -> f64 {
   d_maj - 2.0 * 5.0 / 8.0 * thread_height_from_pitch(pitch)
 }
@@ -835,37 +1061,27 @@ fn d_min_from_d_maj_pitch(d_maj: f64, pitch: f64) -> f64 {
 impl Mesh {
   /// Creates a threaded cylinder.
   ///
-  /// :param d_min: dMin of thread.
-  /// :type d_min: float
+  /// d_min: dMin of thread.
   ///
-  /// :param d_maj: dMaj of thread.
-  /// :type d_maj: float
+  /// d_maj: dMaj of thread.
   ///
-  /// :param pitch: Pitch of the thread.
-  /// :type pitch: float
+  /// pitch: Pitch of the thread.
   ///
-  /// :param length: The length of the threaded rod.
-  /// :type length: float
+  /// length: The length of the threaded rod.
   ///
-  /// :param segments: The number of segments in a full revolution.
-  /// :type segments: int
+  /// segments: The number of segments in a full revolution.
   ///
-  /// :param lead_in: Add lead in on lower Z
-  /// :type lead_in: bool
+  /// lead_in: Add lead in on lower Z.
   ///
-  /// :param lead_in_degrees: The total angle of lead in.
-  /// :type lead_in_degrees: float
+  /// lead_in_degrees: The total angle of lead in.
   ///
-  /// :param lead_out_degrees: The total angle of lead out.
-  /// :type lead_out_degrees: float
+  /// lead_out_degrees: The total angle of lead out.
   ///
-  /// :param left_hand_thread: lefty tighty?
-  /// :type left_hand_thread: bool
+  /// left_hand_thread: lefty tighty?
   ///
-  /// :param center: Center vertically.
-  /// :type center: bool
+  /// center: Center vertically.
   ///
-  /// :return: The threaded cylinder.
+  /// return: The threaded cylinder.
   pub fn threaded_cylinder(
     d_min: f64,
     d_maj: f64,
@@ -884,7 +1100,7 @@ impl Mesh {
     let n_steps = (n_revolutions * segments as f64) as usize;
     let z_step = thread_length / n_steps as f64;
     let step_angle = 360.0 / segments as f64;
-    let n_lead_in_steps = (segments as f64 * lead_in_degrees / 360.0) as usize;
+    let n_lead_in_steps = (segments as f64 * lead_in_degrees / 360.0 + 2.0) as usize;
     let n_lead_out_steps = (segments as f64 * lead_out_degrees / 360.0) as usize;
     let mut lead_in_step = 2;
     let mut lead_out_step = n_lead_out_steps;
@@ -1177,36 +1393,27 @@ impl Mesh {
     result
   }
 
-  /// Creates a threaded rod at the world origin
+  /// Creates a threaded rod at the world origin.
   ///
-  /// :param m: The metric size of the rod.
-  /// :type m: int
+  /// m: The metric size of the rod.
   ///
-  /// :param length: The length of the rod in mm.
-  /// :type length: float
+  /// length: The length of the rod in mm.
   ///
-  /// :param segments: The number of segments in a circle.
-  /// :type segments: int
+  /// segments: The number of segments in a circle.
   ///
-  /// :param lead_in: Tapers off the threads at the bottom of the rod.
-  /// :type lead_in: bool
+  /// lead_in: Tapers off the threads at the bottom of the rod.
   ///
-  /// :param lead_in_degrees: Span of the lead in.
-  /// :type lead_in_degrees: float
+  /// lead_in_degrees: Span of the lead in.
   ///
-  /// :param lead_out: Tapers off the threads at the top of the rod.
-  /// :type lead_out: bool
+  /// lead_out: Tapers off the threads at the top of the rod.
   ///
-  /// :param lead_out_degrees: Span of the lead out.
-  /// :type lead_out_degrees: float
+  /// lead_out_degrees: Span of the lead out.
   ///
-  /// :param left_hand_thread: lefty tighty?
-  /// :type left_hand_thread: bool
+  /// left_hand_thread: lefty tighty?
   ///
-  /// :param center: Center vertically.
-  /// :type center: bool
+  /// center: Center vertically.
   ///
-  /// :return: The threaded rod.
+  /// return: The threaded rod.
   pub fn threaded_rod(
     m: i32,
     length: f64,
@@ -1240,36 +1447,27 @@ impl Mesh {
 
   /// Create a hex head bolt at the world origin.
   ///
-  /// :param m: The metric bolt size.
-  /// :type m: int
+  /// m: The metric bolt size.
   ///
-  /// :param length: The length of the threaded part.
-  /// :type length: float
+  /// length: The length of the threaded part.
   ///
-  /// :param head_height: The height of the hex head.
-  /// :type head_height: float
+  /// head_height: The height of the hex head.
   ///
-  /// :param segments: The number of segments in a circle.
-  /// :type segments: int
+  /// segments: The number of segments in a circle.
   ///
-  /// :param lead_in: Tapers off the thread at the end.
-  /// :type lead_in: bool
+  /// lead_in: Tapers off the thread at the end.
   ///
-  /// :param lead_in_degrees: The amount of degrees the tapered thread occupies.
-  /// :type lead_in_degrees: bool
+  /// lead_in_degrees: The amount of degrees the tapered thread occupies.
   ///
-  /// :param chamfered: Whether or not to chamfer the top and bottom of the head.
-  /// :type chamfered: bool
+  /// chamfered: Whether or not to chamfer the top and bottom of the head.
   ///
-  /// :param chamfer_size: The size of the chamfer.
+  /// chamfer_size: The size of the chamfer.
   ///
-  /// :param left_hand_thread: lefty tighty?
-  /// :type left_hand_thread: bool
+  /// left_hand_thread: lefty tighty?
   ///
-  /// :param center: Center vertically
-  /// :type center: bool
+  /// center: Center vertically.
   ///
-  /// :return OpenSCADObject: The hex bolt.
+  /// return: The hex bolt.
   pub fn hex_bolt(
     m: i32,
     length: f64,
@@ -1315,7 +1513,6 @@ impl Mesh {
           (0.25 * head_diameter * 0.25 * head_diameter + 0.5 * head_diameter * 0.5 * head_diameter)
             .sqrt(),
           head_height,
-          1.0,
           segments,
           false,
         );
@@ -1329,22 +1526,17 @@ impl Mesh {
 
   /// Create a tap for making threaded holes in things.
   ///
-  /// :param m: The metric size of the tap.
-  /// :type m: int
+  /// m: The metric size of the tap.
   ///
-  /// :param length: The length of the tap.
-  /// :type length: float
+  /// length: The length of the tap.
   ///
-  /// :param segments: The number of segmentst in a circle.
-  /// :type segments: int
+  /// segments: The number of segmentst in a circle.
   ///
-  /// :param left_hand_thread: lefty tighty?
-  /// :type left_hand_thread: bool
+  /// left_hand_thread: lefty tighty?
   ///
-  /// :param center: Center vertically
-  /// :type center: bool
+  /// center: Center vertically.
   ///
-  /// :return: The tap.
+  /// return: The tap.
   pub fn tap(m: i32, length: f64, segments: usize, left_hand_thread: bool, center: bool) -> Self {
     let thread_info = m_table_lookup(m);
     let pitch = thread_info["pitch"];
@@ -1368,28 +1560,21 @@ impl Mesh {
 
   /// Create a hex nut.
   ///
-  /// :param m: The metric size of the nut.
-  /// :type m: int
+  /// m: The metric size of the nut.
   ///
-  /// :param height: The height of the nut.
-  /// :type height: float
+  /// height: The height of the nut.
   ///
-  /// :param segments: The number of segments in a circle.
-  /// :type segments: int
+  /// segments: The number of segments in a circle.
   ///
-  /// :param chamfered: Adds a chamfer to the nut.
-  /// :type chamfered: bool
+  /// chamfered: Adds a chamfer to the nut.
   ///
-  /// :param chamfer_size: The size of the chamfer, leave at 0 for the default size.
-  /// :param chamfer_size: float
+  /// chamfer_size: The size of the chamfer, leave at 0.0 for the default size.
   ///
-  /// :param left_hand_thread: lefty tighty?
-  /// :type left_hand_thread: bool
+  /// left_hand_thread: lefty tighty?
   ///
-  /// :param center: Center horizontally.
-  /// :type center: bool
+  /// center: Center horizontally.
   ///
-  /// :return: The nut.
+  /// return: The nut.
   pub fn hex_nut(
     m: i32,
     height: f64,
@@ -1418,7 +1603,6 @@ impl Mesh {
           chamfer_size,
           (0.25 * nut_width * 0.25 * nut_width + 0.5 * nut_width * 0.5 * nut_width).sqrt(),
           height,
-          1.0,
           segments,
           center,
         )
@@ -1432,6 +1616,7 @@ impl Mesh {
   }
 }
 
+/// Returns the hashmap of iso metric thread profiles
 fn m_table() -> HashMap<i32, HashMap<&'static str, f64>> {
   HashMap::from([
     (
