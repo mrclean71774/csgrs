@@ -20,56 +20,88 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+//! A viewer is a way to visualize points and edges.
+//!
+//! It is used to create a sphere at each vertex/point stored and a cylinder
+//! between pairs of points stored for edges. With the viewer you can see what
+//! a 2D profile or bezier curve looks like before extrusion etc. Viewer does
+//! not do boolean operations on the added points and meshes it just adds more
+//! triangles to the mesh.
+
 use {
   crate::mesh::Mesh,
   math::{mt4::Mt4, pt2::Pt2, pt3::Pt3},
 };
 
 pub struct Viewer {
-  vert_size: f64,
-  edge_size: f64,
+  vert_radius: f64,
+  edge_radius: f64,
   segments: usize,
   verts: Vec<Pt3>,
   edges: Vec<(Pt3, Pt3)>,
 }
 
 impl Viewer {
-  pub fn new(vert_size: f64, edge_size: f64, segments: usize) -> Self {
+  /// Create a new viewer.
+  ///
+  /// vert_radius: The radius of vertex points.
+  ///
+  /// edge_radius: The radius of an edge.
+  ///
+  /// segments: The number of segments in a circle.
+  ///
+  /// return: The viewer.
+  pub fn new(vert_radius: f64, edge_radius: f64, segments: usize) -> Self {
     Self {
-      vert_size,
-      edge_size,
+      vert_radius,
+      edge_radius,
       segments,
       verts: Vec::new(),
       edges: Vec::new(),
     }
   }
 
+  /// Add an edge to the viewer.
+  ///
+  /// edge: The points that define the edge.
   pub fn add_edge(&mut self, edge: (Pt3, Pt3)) {
     self.edges.push(edge);
   }
 
+  /// Add a vertex to the viewer.
+  ///
+  /// vert: The vertex to add.
   pub fn add_vert(&mut self, vert: Pt3) {
     self.verts.push(vert);
   }
 
+  /// Add an array of vertices to the viewer.
+  ///
+  /// verts: The array of vertices.
   pub fn add_verts(&mut self, verts: &Vec<Pt3>) {
     for vert in verts {
       self.verts.push(*vert);
     }
   }
 
+  /// Add an array of 2D vertices to the viewer.\
+  ///
+  /// verts: The array of 2D vertices.
   pub fn add_vert2s(&mut self, verts: &Vec<Pt2>) {
     for vert in verts {
       self.verts.push(vert.as_pt3(0.0));
     }
   }
 
+  /// Render the points and edges to a mesh.
+  ///
+  /// return: A mesh containing all the points and edges.
   pub fn render(&self) -> Mesh {
     let mut mesh = Mesh {
       triangles: Vec::new(),
     };
     for vert in &self.verts {
-      let mut s = Mesh::sphere(self.vert_size / 2.0, self.segments);
+      let mut s = Mesh::sphere(self.vert_radius, self.segments);
       s.translate(*vert);
 
       mesh.triangles.append(&mut s.triangles);
@@ -77,8 +109,8 @@ impl Viewer {
     for edge in &self.edges {
       let m = Mt4::look_at_matrix_lh(edge.0, edge.1, Pt3::new(0.0, 0.0, 1.0));
       let mut c = Mesh::cylinder(
-        self.edge_size / 2.0,
-        self.edge_size / 2.0,
+        self.edge_radius,
+        self.edge_radius,
         (edge.1 - edge.0).len(),
         self.segments,
         false,
