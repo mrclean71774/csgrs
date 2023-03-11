@@ -47,7 +47,9 @@ impl BSPNode {
     for poly in &mut self.polygons {
       poly.flip();
     }
-    self.plane.as_mut().unwrap().flip();
+    if self.plane.is_some() {
+      self.plane.as_mut().unwrap().flip();
+    }
     if self.front.is_some() {
       self.front.as_mut().unwrap().invert();
     }
