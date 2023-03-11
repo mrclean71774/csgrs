@@ -27,7 +27,6 @@ use crate::pt3f::Pt3f;
 use crate::pt4f::Pt4f;
 use crate::rng::MersenneTwister;
 
-/// Functions for Vec<Pt2>
 pub trait VecPt2f {
   fn translate(&mut self, pt: Pt2f) -> &mut Self;
 
@@ -50,7 +49,6 @@ impl VecPt2f for Vec<Pt2f> {
   }
 }
 
-/// A 2D point.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Pt2f {
   pub x: f32,

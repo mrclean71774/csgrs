@@ -26,7 +26,6 @@ use crate::dsin;
 use crate::pt4::Pt4;
 use crate::rng::MersenneTwister;
 
-/// Functions for Vec<Pt3>
 pub trait VecPt3 {
   fn translate(&mut self, pt: Pt3) -> &mut Self;
   fn rotate_x(&mut self, degrees: f64) -> &mut Self;
@@ -64,7 +63,6 @@ impl VecPt3 for Vec<Pt3> {
   }
 }
 
-/// A 3D point.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Pt3 {
   pub x: f64,

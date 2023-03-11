@@ -27,17 +27,13 @@ use crate::pt3::Pt3;
 use crate::pt4::Pt4;
 use crate::rng::MersenneTwister;
 
-/// Functions for Vec<Pt2>
 pub trait VecPt2 {
-  /// Translate a Vec<Pt2> by translating each Pt2
   fn translate(&mut self, pt: Pt2) -> &mut Self;
 
-  /// Rotate a Vec<Pt2> by rotating each Pt2
   fn rotate(&mut self, degrees: f64) -> &mut Self;
 }
 
 impl VecPt2 for Vec<Pt2> {
-  /// Translate a Vec<Pt2> by translating each Pt2
   fn translate(&mut self, pt: Pt2) -> &mut Self {
     for p in self.iter_mut() {
       *p += pt;
@@ -45,7 +41,6 @@ impl VecPt2 for Vec<Pt2> {
     self
   }
 
-  /// Rotate a Vec<Pt2> by rotating each Pt2
   fn rotate(&mut self, degrees: f64) -> &mut Self {
     for p in self.iter_mut() {
       p.rotate(degrees);
@@ -54,7 +49,6 @@ impl VecPt2 for Vec<Pt2> {
   }
 }
 
-/// A 2D point.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Pt2 {
   pub x: f64,
