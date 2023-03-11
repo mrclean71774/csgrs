@@ -27,6 +27,7 @@ mod mesh;
 mod plane;
 mod polygon;
 mod triangle;
+mod viewer;
 
 pub use {
   bsp_node::BSPNode,
@@ -36,4 +37,5 @@ pub use {
   plane::Plane,
   polygon::Polygon,
   triangle::Triangle,
+  viewer::Viewer,
 };
