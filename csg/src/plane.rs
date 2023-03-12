@@ -22,7 +22,7 @@
 
 //! A geometric plane part of https://github.com/timknip/pycsg port.
 
-use {crate::polygon::Polygon, math::pt3::Pt3};
+use {crate::polygon::Polygon, math::Pt3};
 
 #[derive(Clone, Copy)]
 pub struct Plane {

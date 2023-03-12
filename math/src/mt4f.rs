@@ -28,14 +28,14 @@ use crate::pt3f::Pt3f;
 use crate::pt4f::Pt4f;
 
 #[derive(Clone, Copy, Default, PartialEq)]
-pub struct Mt4 {
+pub struct Mt4f {
   pub x: Pt4f,
   pub y: Pt4f,
   pub z: Pt4f,
   pub w: Pt4f,
 }
 
-impl std::fmt::Display for Mt4 {
+impl std::fmt::Display for Mt4f {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     writeln!(f, "| {} {} {} {} |", self.x.x, self.y.x, self.z.x, self.w.x)?;
     writeln!(f, "| {} {} {} {} |", self.x.y, self.y.y, self.z.y, self.w.y)?;
@@ -44,13 +44,13 @@ impl std::fmt::Display for Mt4 {
   }
 }
 
-impl Mt4 {
+impl Mt4f {
   pub fn new(x: Pt4f, y: Pt4f, z: Pt4f, w: Pt4f) -> Self {
     Self { x, y, z, w }
   }
 
   pub fn transposed(&self) -> Self {
-    Mt4::new(
+    Mt4f::new(
       Pt4f::new(self.x.x, self.y.x, self.z.x, self.w.x),
       Pt4f::new(self.x.y, self.y.y, self.z.y, self.w.y),
       Pt4f::new(self.x.z, self.y.z, self.z.z, self.w.z),
@@ -59,7 +59,7 @@ impl Mt4 {
   }
 
   pub fn identity() -> Self {
-    Mt4::new(
+    Mt4f::new(
       Pt4f::new(1.0, 0.0, 0.0, 0.0),
       Pt4f::new(0.0, 1.0, 0.0, 0.0),
       Pt4f::new(0.0, 0.0, 1.0, 0.0),
@@ -68,7 +68,7 @@ impl Mt4 {
   }
 
   pub fn scale_matrix(x: f32, y: f32, z: f32) -> Self {
-    let mut result = Mt4::identity();
+    let mut result = Mt4f::identity();
     result.x.x = x;
     result.y.y = y;
     result.z.z = z;
@@ -76,7 +76,7 @@ impl Mt4 {
   }
 
   pub fn translate_matrix(x: f32, y: f32, z: f32) -> Self {
-    let mut result = Mt4::identity();
+    let mut result = Mt4f::identity();
     result.w.x = x;
     result.w.y = y;
     result.w.z = z;
@@ -86,7 +86,7 @@ impl Mt4 {
   pub fn rot_x_matrix(degrees: f32) -> Self {
     let c = dcosf(degrees);
     let s = dsinf(degrees);
-    Mt4::new(
+    Mt4f::new(
       Pt4f::new(1.0, 0.0, 0.0, 0.0),
       Pt4f::new(0.0, c, -s, 0.0),
       Pt4f::new(0.0, s, c, 0.0),
@@ -98,7 +98,7 @@ impl Mt4 {
   pub fn rot_y_matrix(degrees: f32) -> Self {
     let c = dcosf(degrees);
     let s = dsinf(degrees);
-    Mt4::new(
+    Mt4f::new(
       Pt4f::new(c, 0.0, s, 0.0),
       Pt4f::new(0.0, 1.0, 0.0, 0.0),
       Pt4f::new(-s, 0.0, c, 0.0),
@@ -110,7 +110,7 @@ impl Mt4 {
   pub fn rot_z_matrix(degrees: f32) -> Self {
     let c = dcosf(degrees);
     let s = dsinf(degrees);
-    Mt4::new(
+    Mt4f::new(
       Pt4f::new(c, -s, 0.0, 0.0),
       Pt4f::new(s, c, 0.0, 0.0),
       Pt4f::new(0.0, 0.0, 1.0, 0.0),
@@ -122,7 +122,7 @@ impl Mt4 {
   pub fn rot_vec(x: f32, y: f32, z: f32, degrees: f32) -> Self {
     let c = dcosf(degrees);
     let s = dsinf(degrees);
-    Mt4::new(
+    Mt4f::new(
       Pt4f::new(
         c + x * x * (1.0 - c),
         x * y * (1.0 - c) - z * s,
@@ -148,7 +148,7 @@ impl Mt4 {
 
   pub fn perspective_matrix(fovy: f32, aspect: f32, near: f32, far: f32) -> Self {
     let tan_half_fovy = dtanf(fovy / 2.0);
-    Mt4::new(
+    Mt4f::new(
       Pt4f::new(1.0 / (aspect * tan_half_fovy), 0.0, 0.0, 0.0),
       Pt4f::new(0.0, 1.0 / tan_half_fovy, 0.0, 0.0),
       Pt4f::new(
@@ -163,7 +163,7 @@ impl Mt4 {
   }
 
   pub fn inverse(&self) -> Option<Self> {
-    let mut out = Mt4::identity();
+    let mut out = Mt4f::identity();
 
     out[0] =
       self[5] * self[10] * self[15] - self[5] * self[11] * self[14] - self[9] * self[6] * self[15]
@@ -280,7 +280,7 @@ impl Mt4 {
     let mut s = f.cross(up);
     s = s.normalized();
     let u = s.cross(f);
-    Mt4::new(
+    Mt4f::new(
       Pt4f::new(s.x, s.y, s.z, -s.dot(eye)),
       Pt4f::new(u.x, u.y, u.z, -u.dot(eye)),
       Pt4f::new(-f.x, -f.y, -f.z, f.dot(eye)),
@@ -298,13 +298,13 @@ impl Mt4 {
     if s == Pt3f::new(0.0, 0.0, 0.0) {
       // anti-parallel check
       if up.dot(f) < 0.0 {
-        return Mt4::rot_x_matrix(180.0);
+        return Mt4f::rot_x_matrix(180.0);
       }
-      return Mt4::identity();
+      return Mt4f::identity();
     }
     s = s.normalized();
     let u = f.cross(s);
-    Mt4::new(
+    Mt4f::new(
       Pt4f::new(s.x, s.y, s.z, -s.dot(eye)),
       Pt4f::new(u.x, u.y, u.z, -u.dot(eye)),
       Pt4f::new(f.x, f.y, f.z, -f.dot(eye)),
@@ -315,7 +315,7 @@ impl Mt4 {
   pub fn rotation_from_direction(direction: Pt3f, up: Pt3f) -> Self {
     let x_axis: Pt3f = up.cross(direction).normalized();
     let z_axis: Pt3f = direction.cross(x_axis).normalized();
-    let mut result = Mt4::identity();
+    let mut result = Mt4f::identity();
     result.x.x = x_axis.x;
     result.x.y = direction.x;
     result.x.z = z_axis.x;
@@ -332,7 +332,7 @@ impl Mt4 {
   }
 }
 
-impl std::ops::Mul<Pt4f> for Mt4 {
+impl std::ops::Mul<Pt4f> for Mt4f {
   type Output = Pt4f;
 
   fn mul(self, rhs: Pt4f) -> Self::Output {
@@ -341,7 +341,7 @@ impl std::ops::Mul<Pt4f> for Mt4 {
   }
 }
 
-impl std::ops::Mul<Pt3f> for Mt4 {
+impl std::ops::Mul<Pt3f> for Mt4f {
   type Output = Pt3f;
 
   fn mul(self, rhs: Pt3f) -> Self::Output {
@@ -354,12 +354,12 @@ impl std::ops::Mul<Pt3f> for Mt4 {
   }
 }
 
-impl std::ops::Mul<Mt4> for Mt4 {
-  type Output = Mt4;
+impl std::ops::Mul<Mt4f> for Mt4f {
+  type Output = Mt4f;
 
-  fn mul(self, rhs: Mt4) -> Self::Output {
+  fn mul(self, rhs: Mt4f) -> Self::Output {
     let t = self.transposed();
-    Mt4::new(
+    Mt4f::new(
       Pt4f::new(
         t.x.dot(rhs.x),
         t.y.dot(rhs.x),
@@ -388,7 +388,7 @@ impl std::ops::Mul<Mt4> for Mt4 {
   }
 }
 
-impl std::ops::Index<usize> for Mt4 {
+impl std::ops::Index<usize> for Mt4f {
   type Output = f32;
 
   fn index(&self, index: usize) -> &Self::Output {
@@ -414,7 +414,7 @@ impl std::ops::Index<usize> for Mt4 {
   }
 }
 
-impl std::ops::IndexMut<usize> for Mt4 {
+impl std::ops::IndexMut<usize> for Mt4f {
   fn index_mut(&mut self, index: usize) -> &mut Self::Output {
     match index {
       0 => &mut self.x.x,

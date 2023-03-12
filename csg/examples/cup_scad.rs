@@ -24,7 +24,7 @@
 
 use {
   csg::Mesh,
-  math::{pt2::Pt2, pt3::Pt3},
+  math::{Pt2, Pt3},
 };
 
 fn main() {

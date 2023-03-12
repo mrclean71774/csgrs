@@ -25,7 +25,7 @@
 
 use {
   crate::mesh::Mesh,
-  math::pt3::{Pt3, VecPt3},
+  math::{Pt3, VecPt3},
   std::io::Write,
 };
 

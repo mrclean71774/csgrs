@@ -32,12 +32,7 @@ use {
     scad::SCAD,
     triangle::{Triangle, VecTriangle},
   },
-  math::{
-    dcos, dsin,
-    mt4::Mt4,
-    pt2::{Pt2, VecPt2},
-    pt3::{Pt3, VecPt3},
-  },
+  math::{dcos, dsin, Mt4, Pt2, Pt3, VecPt2, VecPt3},
   std::{
     collections::HashMap,
     io::{Read, Write},

@@ -24,7 +24,7 @@
 
 use {
   crate::{bsp_node::BSPNode, mesh::Mesh, polygon::Polygon, triangle::Triangle},
-  math::pt3::Pt3,
+  math::Pt3,
 };
 
 #[derive(Clone)]

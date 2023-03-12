@@ -22,7 +22,7 @@
 
 //! A polygon part of https://github.com/timknip/pycsg port.
 
-use {crate::plane::Plane, math::pt3::Pt3};
+use {crate::plane::Plane, math::Pt3};
 
 #[derive(Clone)]
 pub struct Polygon {

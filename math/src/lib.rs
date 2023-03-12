@@ -22,15 +22,27 @@
 
 //! A double precision, non generic, math library.
 
-pub mod mt4;
-pub mod mt4f;
-pub mod pt2;
-pub mod pt2f;
-pub mod pt3;
-pub mod pt3f;
-pub mod pt4;
-pub mod pt4f;
-pub mod rng;
+mod mt4;
+mod mt4f;
+mod pt2;
+mod pt2f;
+mod pt3;
+mod pt3f;
+mod pt4;
+mod pt4f;
+mod rng;
+
+pub use {
+  mt4::Mt4,
+  mt4f::Mt4f,
+  pt2::{CubicBezierChain2D, Pt2, VecPt2},
+  pt2f::{CubicBezierChain2Df, Pt2f, VecPt2f},
+  pt3::{CubicBezierChain3D, Pt3, VecPt3},
+  pt3f::{CubicBezierChain3Df, Pt3f, VecPt3f},
+  pt4::Pt4,
+  pt4f::Pt4f,
+  rng::MersenneTwister,
+};
 
 pub const PI: f64 = std::f64::consts::PI;
 pub const PI_O_2: f64 = std::f64::consts::FRAC_PI_2;

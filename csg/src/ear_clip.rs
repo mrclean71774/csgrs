@@ -23,7 +23,7 @@
 //! A Rust implementation of the ear clipping algorithm described, and coded in C++, at
 //! https://abitwise.blogspot.com/2013/09/triangulating-concave-and-convex.html
 
-use math::{approx_eq, pt2::Pt2, pt3::Pt3};
+use math::{approx_eq, Pt2, Pt3};
 
 /// Test if winding order is counter clockwise.
 ///

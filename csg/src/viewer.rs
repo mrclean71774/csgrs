@@ -30,7 +30,7 @@
 
 use {
   crate::mesh::Mesh,
-  math::{mt4::Mt4, pt2::Pt2, pt3::Pt3},
+  math::{Mt4, Pt2, Pt3},
 };
 
 pub struct Viewer {

@@ -22,7 +22,7 @@
 
 //! Triangles are the building blocks of meshes.
 
-use math::pt3::Pt3;
+use math::Pt3;
 
 #[derive(Clone, Copy)]
 pub struct Triangle {

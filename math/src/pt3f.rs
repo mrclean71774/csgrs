@@ -291,12 +291,12 @@ struct CubicBezier3D {
 }
 
 #[derive(Clone)]
-pub struct CubicBezierChain3D {
+pub struct CubicBezierChain3Df {
   curves: Vec<CubicBezier3D>,
   closed: bool,
 }
 
-impl CubicBezierChain3D {
+impl CubicBezierChain3Df {
   pub fn new(start: Pt3f, control1: Pt3f, control2: Pt3f, end: Pt3f) -> Self {
     Self {
       curves: vec![CubicBezier3D {
