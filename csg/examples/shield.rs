@@ -55,8 +55,8 @@ fn main() {
   let mut profile = lower_right_curve.gen_points(12);
   profile.append(&mut Pt2::quadratic_bezier(top_right, cp4, top_center, 6));
 
-  // copy everything but the first and last points
-  // in the right side to the left side in reverse order
+  // copy everything but the first and last points in the right side to the left
+  // side in reverse order to complete the profile and ensure ccw winding
   let n_points = profile.len();
   for i in 1..n_points - 1 {
     profile.push(Pt2::new(
