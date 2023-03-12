@@ -95,8 +95,8 @@ impl Mesh {
     SCAD::from_mesh(self)
   }
 
-  /// Return an array of the unique points in a mesh.
-  pub fn points(&self) -> Vec<Pt3> {
+  /// Return an array of the unique vertices in a mesh.
+  pub fn vertices(&self) -> Vec<Pt3> {
     let mut points: Vec<Pt3> = Vec::new();
     for triangle in &self.triangles {
       let mut a_found = false;
