@@ -98,7 +98,7 @@ impl Viewer {
     }
   }
 
-  /// Render the points and edges to a mesh.
+  /// Render the points and edges of a mesh.
   ///
   /// return: A mesh containing all the points and edges.
   pub fn render(&self) -> Mesh {
