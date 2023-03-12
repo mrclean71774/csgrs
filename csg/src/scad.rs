@@ -350,7 +350,7 @@ impl SCAD {
   /// center: Center vertically.
   ///
   /// return: The threaded cylinder.
-  pub fn threaded_cylinder(
+  fn threaded_cylinder(
     d_min: f64,
     d_maj: f64,
     pitch: f64,
@@ -772,21 +772,18 @@ impl SCAD {
 
     let mut head =
       Mesh::circumscribed_polygon(6, head_diameter / 2.0, head_height, false).into_scad();
-    let mut chamfer_size = chamfer_size;
     if chamfered {
-      if chamfer_size == 0.0 {
-        chamfer_size = 0.2 * head_diameter;
-      }
-      head = head
-        - Mesh::external_cylinder_chamfer(
-          chamfer_size,
-          (0.25 * head_diameter * 0.25 * head_diameter + 0.5 * head_diameter * 0.5 * head_diameter)
-            .sqrt(),
-          head_height,
-          segments,
-          false,
-        )
-        .into_scad();
+      let (cut1, cut2) = Mesh::external_cylinder_chamfer(
+        chamfer_size,
+        0.0,
+        (0.25 * head_diameter * 0.25 * head_diameter + 0.5 * head_diameter * 0.5 * head_diameter)
+          .sqrt(),
+        head_height,
+        segments,
+        false,
+      );
+      head = head - cut1.into_scad();
+      head = head - cut2.into_scad();
     }
     let mut bolt = rod + head;
     if center {
@@ -864,20 +861,17 @@ impl SCAD {
     let nut_blank = Mesh::circumscribed_polygon(6, nut_width / 2.0, height, false).into_scad();
 
     let mut nut = nut_blank - nut_tap;
-    let mut chamfer_size = chamfer_size;
     if chamfered {
-      if chamfer_size == 0.0 {
-        chamfer_size = 2.0;
-      }
-      nut = nut
-        - Mesh::external_cylinder_chamfer(
-          chamfer_size,
-          (0.25 * nut_width * 0.25 * nut_width + 0.5 * nut_width * 0.5 * nut_width).sqrt(),
-          height,
-          segments,
-          center,
-        )
-        .into_scad()
+      let (cut1, cut2) = Mesh::external_cylinder_chamfer(
+        chamfer_size,
+        1.0,
+        (0.25 * nut_width * 0.25 * nut_width + 0.5 * nut_width * 0.5 * nut_width).sqrt(),
+        height,
+        segments,
+        center,
+      );
+      nut = nut - cut1.into_scad();
+      nut = nut - cut2.into_scad();
     }
 
     if center {

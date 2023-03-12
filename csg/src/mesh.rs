@@ -368,6 +368,8 @@ impl Mesh {
   ///
   /// size: The size of the angled part of the chamfer profile.
   ///
+  /// oversize: How much non-angled part there is on the chamfer.
+  ///
   /// radius: The radius of the cylinder to be chamfered.
   ///
   /// height: The height of the cylinder to be chamfered.
@@ -377,19 +379,21 @@ impl Mesh {
   /// return: The mesh.
   pub fn external_cylinder_chamfer(
     size: f64,
+    oversize: f64,
     radius: f64,
     height: f64,
     segments: usize,
     center: bool,
-  ) -> Self {
-    let mut result = Self::external_circle_chamfer(size, radius, 360.0, 1.0, segments);
-    let mut result1 = Self::external_circle_chamfer(size, radius, 360.0, 1.0, segments);
+  ) -> (Self, Self) {
+    let mut result = Self::external_circle_chamfer(size, oversize, radius, 360.0, segments);
+    let mut result1 = Self::external_circle_chamfer(size, oversize, radius, 360.0, segments);
     result1.rotate_x(180.0);
     result1.translate(Pt3::new(0.0, 0.0, height));
     if center {
       result.translate(Pt3::new(0.0, 0.0, -height / 2.0));
+      result1.translate(Pt3::new(0.0, 0.0, -height / 2.0));
     }
-    result + result1
+    (result, result1)
   }
 
   /// Create a regular polygon.
