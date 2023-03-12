@@ -68,6 +68,13 @@ impl Viewer {
     self.edges.push(edge);
   }
 
+  /// Add an array of edges to the viewer.
+  ///
+  /// edges: The array of edges.
+  pub fn add_edges(&mut self, mut edges: Vec<(Pt3, Pt3)>) {
+    self.edges.append(&mut edges);
+  }
+
   /// Add a vertex to the viewer.
   ///
   /// vert: The vertex to add.
@@ -78,10 +85,8 @@ impl Viewer {
   /// Add an array of vertices to the viewer.
   ///
   /// verts: The array of vertices.
-  pub fn add_verts(&mut self, verts: &Vec<Pt3>) {
-    for vert in verts {
-      self.verts.push(*vert);
-    }
+  pub fn add_verts(&mut self, mut verts: Vec<Pt3>) {
+    self.verts.append(&mut verts);
   }
 
   /// Add an array of 2D vertices to the viewer.\
