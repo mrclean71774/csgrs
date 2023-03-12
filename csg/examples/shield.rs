@@ -29,10 +29,7 @@
 //! control point. And if you call close on the chain you provide a length for control1
 //! in the first link to replace the absolute position you provided upon creation of the chain.
 
-use {
-  csg::{Mesh, Viewer},
-  math::{CubicBezierChain2D, Pt2},
-};
+use csg::{CubicBezierChain2D, Mesh, Pt2, Viewer};
 
 fn main() {
   // whether to save the viewer or mesh output

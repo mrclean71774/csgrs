@@ -1,5 +1,5 @@
 [package]
-name = "math"
+name = "csg_math"
 version = "0.0.1"
 edition = "2021"
 

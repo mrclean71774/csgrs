@@ -27,12 +27,8 @@
 
 use {
   crate::{
-    csg::CSG,
-    ear_clip::triangulate3d,
-    scad::SCAD,
-    triangle::{Triangle, VecTriangle},
+    dcos, dsin, triangulate3d, Mt4, Pt2, Pt3, Triangle, VecPt2, VecPt3, VecTriangle, CSG, SCAD,
   },
-  math::{dcos, dsin, Mt4, Pt2, Pt3, VecPt2, VecPt3},
   std::io::{Read, Write},
 };
 

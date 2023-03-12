@@ -4,5 +4,5 @@ version = "0.0.1"
 edition = "2021"
 
 [dependencies]
-math = {path="../math"}
+csg_math = {path="../csg_math"}
 

@@ -22,10 +22,7 @@
 
 //! Constructive Solid Geometry part of https://github.com/timknip/pycsg port
 
-use {
-  crate::{bsp_node::BSPNode, mesh::Mesh, polygon::Polygon, triangle::Triangle},
-  math::Pt3,
-};
+use crate::{bsp_node::BSPNode, mesh::Mesh, polygon::Polygon, triangle::Triangle, Pt3};
 
 #[derive(Clone)]
 pub struct CSG {

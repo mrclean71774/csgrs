@@ -22,10 +22,7 @@
 
 //! This example creates a cup with a handle using the OpenSCAD backend.
 
-use {
-  csg::Mesh,
-  math::{Pt2, Pt3},
-};
+use csg::{Mesh, Pt2, Pt3};
 
 fn main() {
   let segments: usize = 36;

@@ -22,10 +22,7 @@
 
 //! This example creates a cup with a handle.
 
-use {
-  csg::Mesh,
-  math::{Pt2, Pt3},
-};
+use csg::{Mesh, Pt2, Pt3};
 
 fn main() {
   // We need to start another thread or we will blow the stack.

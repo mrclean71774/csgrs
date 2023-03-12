@@ -28,10 +28,7 @@
 //! not do boolean operations on the added points and meshes it just adds more
 //! triangles to the mesh.
 
-use {
-  crate::mesh::Mesh,
-  math::{Mt4, Pt2, Pt3},
-};
+use crate::{Mesh, Mt4, Pt2, Pt3};
 
 pub struct Viewer {
   vert_radius: f64,

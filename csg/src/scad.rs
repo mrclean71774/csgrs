@@ -24,8 +24,7 @@
 // NOTE: OpenSCAD uses clockwise winding order.
 
 use {
-  crate::mesh::Mesh,
-  math::{dcos, dsin, Pt3, VecPt3},
+  crate::{dcos, dsin, Mesh, Pt3, VecPt3},
   std::collections::HashMap,
   std::io::Write,
 };

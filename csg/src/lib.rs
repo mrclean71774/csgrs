@@ -33,11 +33,15 @@ mod viewer;
 pub use {
   bsp_node::BSPNode,
   csg::CSG,
+  csg_math::{
+    approx_eq, dacos, dasin, datan, dcos, dsin, dtan, CubicBezierChain2D, CubicBezierChain3D,
+    MersenneTwister, Mt4, Pt2, Pt3, Pt4, VecPt2, VecPt3,
+  },
   ear_clip::{triangulate2d, triangulate3d},
   mesh::Mesh,
   plane::Plane,
   polygon::Polygon,
   scad::SCAD,
-  triangle::Triangle,
+  triangle::{Triangle, VecTriangle},
   viewer::Viewer,
 };
