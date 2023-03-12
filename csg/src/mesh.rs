@@ -95,6 +95,73 @@ impl Mesh {
     SCAD::from_mesh(self)
   }
 
+  /// Return an array of the unique points in a mesh.
+  pub fn points(&self) -> Vec<Pt3> {
+    let mut points: Vec<Pt3> = Vec::new();
+    for triangle in &self.triangles {
+      let mut a_found = false;
+      let mut b_found = false;
+      let mut c_found = false;
+      for point in &points {
+        if triangle.a == *point {
+          a_found = true;
+        }
+        if triangle.b == *point {
+          b_found = true;
+        }
+        if triangle.c == *point {
+          c_found = true;
+        }
+      }
+      if !a_found {
+        points.push(triangle.a);
+      }
+      if !b_found {
+        points.push(triangle.b);
+      }
+      if !c_found {
+        points.push(triangle.c);
+      }
+    }
+    points
+  }
+
+  /// Return all the unique edges in a mesh
+  pub fn edges(&self) -> Vec<(Pt3, Pt3)> {
+    let mut edges: Vec<(Pt3, Pt3)> = Vec::new();
+    for triangle in &self.triangles {
+      let edge1 = (triangle.a, triangle.b);
+      let edge2 = (triangle.b, triangle.c);
+      let edge3 = (triangle.c, triangle.a);
+
+      let mut edge1_found = false;
+      let mut edge2_found = false;
+      let mut edge3_found = false;
+
+      for edge in &edges {
+        if (edge1.0 == edge.0 && edge1.1 == edge.1) || (edge1.1 == edge.0 && edge1.0 == edge.1) {
+          edge1_found = true;
+        }
+        if (edge2.0 == edge.0 && edge2.1 == edge.1) || (edge2.1 == edge.0 && edge2.0 == edge.1) {
+          edge2_found = true;
+        }
+        if (edge3.0 == edge.0 && edge3.1 == edge.1) || (edge3.1 == edge.0 && edge3.0 == edge.1) {
+          edge3_found = true;
+        }
+      }
+      if !edge1_found {
+        edges.push(edge1);
+      }
+      if !edge2_found {
+        edges.push(edge2);
+      }
+      if !edge3_found {
+        edges.push(edge3);
+      }
+    }
+    edges
+  }
+
   /// Translate a mesh by the given vector.
   ///
   /// v: The translation vector.
