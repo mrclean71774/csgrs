@@ -58,7 +58,12 @@ impl SCAD {
 
   /// Create a SCAD from a Mesh.
   ///
-  /// NOTE: It's usually more ergonomic to call mesh.into_scad() instead of using this function directly.
+  /// NOTE: It's usually more ergonomic to call mesh.into_scad() instead of
+  /// using this function directly.
+  ///
+  /// mesh: The mesh this SCAD will represent.
+  ///
+  /// return: The SCAD object.
   pub fn from_mesh(mesh: Mesh) -> Self {
     let n_triangles = mesh.triangles.len();
     let mut vertices = Vec::new();
@@ -111,7 +116,6 @@ impl SCAD {
         index += 1;
       }
     }
-    println!("{} {}", vertices.len(), indices.len());
 
     Self::from_verts_and_index(vertices, indices)
   }
@@ -162,7 +166,7 @@ impl SCAD {
     }
   }
 
-  pub fn save(&self, path: &str) {
+  pub fn save_scad(&self, path: &str) {
     let s = format!("{}", self);
     let mut file = std::fs::File::create(path).unwrap();
     file.write(s.as_bytes()).unwrap();
