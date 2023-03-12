@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+//! A geometric plane part of https://github.com/timknip/pycsg port.
+
 use {crate::polygon::Polygon, math::pt3::Pt3};
 
 #[derive(Clone, Copy)]

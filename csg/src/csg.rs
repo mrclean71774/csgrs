@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+//! Constructive Solid Geometry part of https://github.com/timknip/pycsg port
+
 use {
   crate::{bsp_node::BSPNode, mesh::Mesh, polygon::Polygon, triangle::Triangle},
   math::pt3::Pt3,

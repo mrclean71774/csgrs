@@ -29,6 +29,7 @@ use {
   crate::{
     csg::CSG,
     ear_clip::triangulate3d,
+    scad::SCAD,
     triangle::{Triangle, VecTriangle},
   },
   math::{
@@ -87,6 +88,11 @@ impl Mesh {
       ));
     }
     Self::from_triangles(triangles)
+  }
+
+  /// Turn the Mesh into a SCAD object for use with the OpenSCAD backend.
+  pub fn into_scad(self) -> SCAD {
+    SCAD::from_mesh(self)
   }
 
   /// Translate a mesh by the given vector.

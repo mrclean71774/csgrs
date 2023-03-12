@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+//! Binary Space Partitioning part of https://github.com/timknip/pycsg port.
+
 use crate::{plane::Plane, polygon::Polygon};
 
 pub struct BSPNode {

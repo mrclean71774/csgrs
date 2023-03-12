@@ -26,6 +26,7 @@ mod ear_clip;
 mod mesh;
 mod plane;
 mod polygon;
+mod scad;
 mod triangle;
 mod viewer;
 
@@ -36,6 +37,7 @@ pub use {
   mesh::Mesh,
   plane::Plane,
   polygon::Polygon,
+  scad::SCAD,
   triangle::Triangle,
   viewer::Viewer,
 };
