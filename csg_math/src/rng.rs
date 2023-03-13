@@ -21,7 +21,8 @@
 // SOFTWARE.
 //
 
-//! Random number generation via Mersenne Twister algorithm
+//! Random number generation via Mersenne Twister algorithm.
+//! A port of https://github.com/ESultanik/mtwister
 
 const STATE_VECTOR_LENGTH: usize = 624;
 const STATE_VECTOR_M: usize = 397; // changes to STATE_VECTOR_LENGTH also require changes to this
