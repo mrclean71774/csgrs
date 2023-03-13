@@ -396,6 +396,9 @@ impl SCAD {
     );
     lead_in_step += 1;
 
+    let lead_out_end_profile1 = lerp(lerp_profile1, thread_profile1, n_lead_out_steps, 1);
+    let lead_out_end_profile3 = lerp(lerp_profile3, thread_profile3, n_lead_out_steps, 1);
+
     let mut vertices: Vec<Pt3> = Vec::new();
     let mut indices: Vec<usize> = Vec::new();
 
@@ -495,13 +498,13 @@ impl SCAD {
         lead_out_step -= 1;
         lead_out_profile1 = lerp(
           thread_profile1,
-          lead_in_start_profile1,
+          lead_out_end_profile1,
           n_lead_out_steps,
           n_lead_out_steps - lead_out_step,
         );
         lead_out_profile3 = lerp(
           thread_profile3,
-          lead_in_start_profile3,
+          lead_out_end_profile3,
           n_lead_out_steps,
           n_lead_out_steps - lead_out_step,
         );
