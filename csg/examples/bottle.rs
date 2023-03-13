@@ -62,9 +62,9 @@ fn make_cap() {
 // insetting the points a little. I chose to inset by 2mm for mose of the
 // bottle but by 3mm at the top because it looked weak at the threaded part.
 //
-// After making the three part we add the outside and the threaded rod and
+// After making the three parts we add the outside and the threaded rod and
 // subtract the inside shape to hollow it out. Finally we save the scad file
-// so that we can render it in OpenSCAD to get out bottle and cap.
+// so that we can render it in OpenSCAD to get our bottle and cap.
 fn make_bottle() {
   let mut outside_profile = Vec::new();
   outside_profile.push(Pt2::new(0.0, 0.0));
