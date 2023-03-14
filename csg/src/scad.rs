@@ -44,6 +44,7 @@ pub struct SCAD {
   indices: Vec<usize>,
   op: Option<BoolOp>,
   children: Vec<SCAD>,
+  pub color: Option<SCADColor>,
 }
 
 impl SCAD {
@@ -53,6 +54,7 @@ impl SCAD {
       indices,
       op: None,
       children: Vec::new(),
+      color: None,
     }
   }
 
@@ -178,6 +180,9 @@ impl std::fmt::Display for SCAD {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     assert!(self.is_valid());
     if self.op.is_some() {
+      if let Some(color) = self.color {
+        write!(f, "color(\"{:?}\")", color)?;
+      }
       match self.op.unwrap() {
         BoolOp::Union => {
           write!(f, "union() {{\n")?;
@@ -191,6 +196,9 @@ impl std::fmt::Display for SCAD {
       }
       write!(f, "{}\n{}\n}}\n", self.children[0], self.children[1])
     } else {
+      if let Some(color) = self.color {
+        write!(f, "color(\"{:?}\")", color)?;
+      }
       write!(f, "polyhedron(\npoints=[")?;
       let n_verts_with_comma = self.vertices.len() - 1;
       for vert_index in 0..n_verts_with_comma {
@@ -247,6 +255,7 @@ impl std::ops::Sub for SCAD {
       indices: Vec::new(),
       op: Some(BoolOp::Difference),
       children: vec![self, rhs],
+      color: None,
     }
   }
 }
@@ -260,6 +269,7 @@ impl std::ops::Add for SCAD {
       indices: Vec::new(),
       op: Some(BoolOp::Union),
       children: vec![self, rhs],
+      color: None,
     }
   }
 }
@@ -273,6 +283,7 @@ impl std::ops::Mul for SCAD {
       indices: Vec::new(),
       op: Some(BoolOp::Intersection),
       children: vec![self, rhs],
+      color: None,
     }
   }
 }
@@ -1422,4 +1433,149 @@ fn m_table() -> HashMap<i32, HashMap<&'static str, f64>> {
       ]),
     ),
   ])
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum SCADColor {
+  Lavender,
+  Thistle,
+  Plum,
+  Violet,
+  Orchid,
+  Fuchsia,
+  Magenta,
+  MediumOrchid,
+  MediumPurple,
+  BlueViolet,
+  DarkViolet,
+  DarkOrchid,
+  DarkMagenta,
+  Purple,
+  Indigo,
+  DarkSlateBlue,
+  SlateBlue,
+  MediumSlateBlue,
+  Pink,
+  LightPink,
+  HotPink,
+  DeepPink,
+  MediumVioletRed,
+  PaleVioletRed,
+  Aqua,
+  Cyan,
+  LightCyan,
+  PaleTurquoise,
+  Aquamarine,
+  Turquoise,
+  MediumTurquoise,
+  DarkTurquoise,
+  CadetBlue,
+  SteelBlue,
+  LightSteelBlue,
+  PowderBlue,
+  LightBlue,
+  SkyBlue,
+  LightSkyBlue,
+  DeepSkyBlue,
+  DodgerBlue,
+  CornflowerBlue,
+  RoyalBlue,
+  Blue,
+  MediumBlue,
+  DarkBlue,
+  Navy,
+  MidnightBlue,
+  IndianRed,
+  LightCoral,
+  Salmon,
+  DarkSalmon,
+  LightSalmon,
+  Red,
+  Crimson,
+  FireBrick,
+  DarkRed,
+  GreenYellow,
+  Chartreuse,
+  LawnGreen,
+  Lime,
+  LimeGreen,
+  PaleGreen,
+  LightGreen,
+  MediumSpringGreen,
+  SpringGreen,
+  MediumSeaGreen,
+  SeaGreen,
+  ForestGreen,
+  Green,
+  DarkGreen,
+  YellowGreen,
+  OliveDrab,
+  Olive,
+  DarkOliveGreen,
+  MediumAquamarine,
+  DarkSeaGreen,
+  LightSeaGreen,
+  DarkCyan,
+  Teal,
+  Coral,
+  Tomato,
+  OrangeRed,
+  DarkOrange,
+  Orange,
+  Gold,
+  Yellow,
+  LightYellow,
+  LemonChiffon,
+  LightGoldenrodYellow,
+  PapayaWhip,
+  Moccasin,
+  PeachPuff,
+  PaleGoldenrod,
+  Khaki,
+  DarkKhaki,
+  Browns,
+  Cornsilk,
+  BlanchedAlmond,
+  Bisque,
+  NavajoWhite,
+  Wheat,
+  BurlyWood,
+  Tan,
+  RosyBrown,
+  SandyBrown,
+  Goldenrod,
+  DarkGoldenrod,
+  Peru,
+  Chocolate,
+  SaddleBrown,
+  Sienna,
+  Brown,
+  Maroon,
+  White,
+  Snow,
+  Honeydew,
+  MintCream,
+  Azure,
+  AliceBlue,
+  GhostWhite,
+  WhiteSmoke,
+  Seashell,
+  Beige,
+  OldLace,
+  FloralWhite,
+  Ivory,
+  AntiqueWhite,
+  Linen,
+  LavenderBlush,
+  MistyRose,
+  Gainsboro,
+  LightGrey,
+  Silver,
+  DarkGray,
+  Gray,
+  DimGray,
+  LightSlateGray,
+  SlateGray,
+  DarkSlateGray,
+  Black,
 }

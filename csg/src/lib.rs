@@ -42,7 +42,7 @@ pub use {
   mesh::Mesh,
   plane::Plane,
   polygon::Polygon,
-  scad::SCAD,
+  scad::{SCADColor, SCAD},
   triangle::{Triangle, VecTriangle},
   viewer::Viewer,
 };
