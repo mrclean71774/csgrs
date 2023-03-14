@@ -23,7 +23,7 @@
 
 //! Constructive Solid Geometry part of https://github.com/timknip/pycsg port
 
-use crate::{bsp_node::BSPNode, mesh::Mesh, polygon::Polygon, triangle::Triangle, Pt3};
+use crate::{Mesh, Pt3, Triangle};
 
 #[derive(Clone)]
 pub struct CSG {
@@ -190,5 +190,246 @@ impl std::ops::Mul<CSG> for CSG {
 
   fn mul(self, rhs: CSG) -> Self::Output {
     self.intersect(rhs)
+  }
+}
+
+pub struct BSPNode {
+  plane: Option<Plane>,
+  front: Option<Box<BSPNode>>,
+  back: Option<Box<BSPNode>>,
+  polygons: Vec<Polygon>,
+}
+
+impl BSPNode {
+  pub fn new(polygons: Option<Vec<Polygon>>) -> Self {
+    let mut node = Self {
+      plane: None,
+      front: None,
+      back: None,
+      polygons: Vec::new(),
+    };
+    if polygons.is_some() {
+      node.build(polygons.unwrap());
+    }
+    node
+  }
+
+  pub fn invert(&mut self) {
+    for poly in &mut self.polygons {
+      poly.flip();
+    }
+    if self.plane.is_some() {
+      self.plane.as_mut().unwrap().flip();
+    }
+    if self.front.is_some() {
+      self.front.as_mut().unwrap().invert();
+    }
+    if self.back.is_some() {
+      self.back.as_mut().unwrap().invert();
+    }
+    std::mem::swap(&mut self.front, &mut self.back);
+  }
+
+  pub fn clip_polygons(&mut self, polygons: Vec<Polygon>) -> Vec<Polygon> {
+    if self.plane.is_none() {
+      return polygons;
+    }
+    let mut front: Vec<Polygon> = Vec::new();
+    let mut back: Vec<Polygon> = Vec::new();
+    for poly in polygons {
+      self
+        .plane
+        .unwrap()
+        .split_polygon(&poly, &mut front, &mut back, &mut front, &mut back)
+    }
+    if self.front.is_some() {
+      front = self.front.as_mut().unwrap().clip_polygons(front);
+    }
+    if self.back.is_some() {
+      back = self.back.as_mut().unwrap().clip_polygons(back);
+    } else {
+      back = Vec::new();
+    }
+    front.append(&mut back);
+
+    front
+  }
+
+  pub fn clip_to(&mut self, bsp: &mut Box<BSPNode>) {
+    self.polygons = bsp.clip_polygons(self.polygons.clone());
+    if self.front.is_some() {
+      self.front.as_mut().unwrap().clip_to(bsp)
+    }
+    if self.back.is_some() {
+      self.back.as_mut().unwrap().clip_to(bsp)
+    }
+  }
+
+  pub fn all_polygons(&self) -> Vec<Polygon> {
+    let mut polygons = self.polygons.clone();
+    if self.front.is_some() {
+      polygons.append(&mut self.front.as_ref().unwrap().all_polygons());
+    }
+    if self.back.is_some() {
+      polygons.append(&mut self.back.as_ref().unwrap().all_polygons());
+    }
+    polygons
+  }
+
+  pub fn build(&mut self, polygons: Vec<Polygon>) {
+    let n_polygons = polygons.len();
+    if n_polygons == 0 {
+      return;
+    }
+    if self.plane.is_none() {
+      self.plane = Some(polygons[0].plane);
+    }
+    self.polygons.push(polygons[0].clone());
+    let mut front: Vec<Polygon> = Vec::new();
+    let mut back: Vec<Polygon> = Vec::new();
+    for i in 1..n_polygons {
+      self.plane.as_mut().unwrap().split_polygon(
+        &polygons[i],
+        &mut self.polygons,
+        &mut self.polygons,
+        &mut front,
+        &mut back,
+      );
+    }
+    if front.len() > 0 {
+      if self.front.is_none() {
+        self.front = Some(Box::new(BSPNode::new(None)));
+      }
+      self.front.as_mut().unwrap().build(front);
+    }
+    if back.len() > 0 {
+      if self.back.is_none() {
+        self.back = Some(Box::new(BSPNode::new(None)));
+      }
+      self.back.as_mut().unwrap().build(back);
+    }
+  }
+}
+
+#[derive(Clone)]
+pub struct Polygon {
+  pub vertices: Vec<Pt3>,
+  pub plane: Plane,
+}
+
+impl Polygon {
+  pub fn new(vertices: Vec<Pt3>) -> Self {
+    let plane = Plane::from_points(vertices[0], vertices[1], vertices[2]);
+    Self { vertices, plane }
+  }
+
+  pub fn flip(&mut self) {
+    let n_verts = self.vertices.len();
+    let mut reversed = Vec::with_capacity(n_verts);
+    for i in 0..n_verts {
+      reversed.push(self.vertices[n_verts - 1 - i]);
+    }
+    self.vertices = reversed;
+    self.plane.flip();
+  }
+}
+
+#[derive(Clone, Copy)]
+pub struct Plane {
+  pub normal: Pt3,
+  pub w: f64,
+}
+
+impl Plane {
+  pub fn new(normal: Pt3, w: f64) -> Self {
+    Self { normal, w }
+  }
+
+  pub fn from_points(a: Pt3, b: Pt3, c: Pt3) -> Self {
+    let n = (b - a).cross(c - a).normalized();
+    Self::new(n, n.dot(a))
+  }
+
+  pub fn flip(&mut self) {
+    self.normal = -self.normal;
+    self.w = -self.w;
+  }
+
+  pub fn split_polygon(
+    &self,
+    polygon: &Polygon,
+    coplanar_front: *mut Vec<Polygon>,
+    coplanar_back: *mut Vec<Polygon>,
+    front: *mut Vec<Polygon>,
+    back: *mut Vec<Polygon>,
+  ) {
+    const EPSILON: f64 = 1.0e-5;
+    const COPLANAR: u32 = 0;
+    const FRONT: u32 = 1;
+    const BACK: u32 = 2;
+    const SPANNING: u32 = 3;
+
+    let mut polygon_type = 0;
+    let n_vertices = polygon.vertices.len();
+    let mut vertex_locs = Vec::with_capacity(n_vertices);
+    for i in 0..n_vertices {
+      let t = self.normal.dot(polygon.vertices[i]) - self.w;
+      let mut loc = COPLANAR;
+      if t < -EPSILON {
+        loc = BACK;
+      } else if t > EPSILON {
+        loc = FRONT;
+      }
+      polygon_type |= loc;
+      vertex_locs.push(loc);
+    }
+
+    if polygon_type == COPLANAR {
+      if self.normal.dot(polygon.plane.normal) > 0.0 {
+        unsafe {
+          (*coplanar_front).push(polygon.clone());
+        }
+      } else {
+        unsafe {
+          (*coplanar_back).push(polygon.clone());
+        }
+      }
+    } else if polygon_type == FRONT {
+      unsafe {
+        (*front).push(polygon.clone());
+      }
+    } else if polygon_type == BACK {
+      unsafe {
+        (*back).push(polygon.clone());
+      }
+    } else if polygon_type == SPANNING {
+      let mut f = Vec::new();
+      let mut b = Vec::new();
+      for i in 0..n_vertices {
+        let j = (i + 1) % n_vertices;
+        let ti = vertex_locs[i];
+        let tj = vertex_locs[j];
+        let vi = polygon.vertices[i];
+        let vj = polygon.vertices[j];
+        if ti != BACK {
+          f.push(vi);
+        }
+        if ti != FRONT {
+          b.push(vi);
+        }
+        if (ti | tj) == SPANNING {
+          let t = (self.w - self.normal.dot(vi)) / self.normal.dot(vj - vi);
+          let v = vi.lerp(vj, t);
+          f.push(v);
+          b.push(v);
+        }
+      }
+      if f.len() >= 3 {
+        unsafe { (*front).push(Polygon::new(f)) };
+      }
+      if b.len() >= 3 {
+        unsafe { (*back).push(Polygon::new(b)) };
+      }
+    }
   }
 }

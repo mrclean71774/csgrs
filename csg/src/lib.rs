@@ -20,19 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod bsp_node;
 mod csg;
 mod ear_clip;
 mod mesh;
-mod plane;
-mod polygon;
 mod scad;
 mod triangle;
 mod viewer;
 
 pub use {
-  bsp_node::BSPNode,
-  csg::CSG,
+  csg::{BSPNode, Plane, Polygon, CSG},
   csg_math::{
     approx_eq, dacos, dasin, datan, dcos, dsin, dtan, CubicBezier2D, CubicBezier3D,
     CubicBezierChain2D, CubicBezierChain3D, MersenneTwister, Mt4, Pt2, Pt3, Pt4, QuadraticBezier2D,
@@ -40,8 +36,6 @@ pub use {
   },
   ear_clip::{triangulate2d, triangulate3d},
   mesh::Mesh,
-  plane::Plane,
-  polygon::Polygon,
   scad::{SCADColor, SCAD},
   triangle::{Triangle, VecTriangle},
   viewer::{SCADViewer, Viewer},
