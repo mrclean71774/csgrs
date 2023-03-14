@@ -777,7 +777,7 @@ impl SCAD {
     if chamfered {
       let (cut1, cut2) = Mesh::external_cylinder_chamfer(
         chamfer_size,
-        0.0,
+        1.0,
         (0.25 * head_diameter * 0.25 * head_diameter + 0.5 * head_diameter * 0.5 * head_diameter)
           .sqrt(),
         head_height,
