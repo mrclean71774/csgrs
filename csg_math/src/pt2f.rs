@@ -351,7 +351,8 @@ impl Pt2f {
       );
     }
 
-    let mut chain = CubicBezierChain2Df::new(knots[0], controls[0], controls[0], knots[1]);
+    let mut chain =
+      CubicBezierChain2Df::new(knots[0], controls[0], controls[0], knots[1], segments);
     for i in 1..(n_knots - 1) {
       chain.add(
         if i % 2 == 0 {
@@ -361,15 +362,17 @@ impl Pt2f {
         },
         controls[i],
         knots[i + 1],
+        segments,
       );
     }
     chain.close(
       inner_handle_length,
       controls[n_knots - 1],
       outer_handle_length,
+      segments,
     );
 
-    chain.gen_points(segments)
+    chain.gen_points()
   }
   pub fn chamfer(size: f32, oversize: f32) -> Vec<Self> {
     vec![
@@ -389,19 +392,21 @@ pub struct QuadraticBezier2Df {
   pub start: Pt2f,
   pub control: Pt2f,
   pub end: Pt2f,
+  pub segments: usize,
 }
 
 impl QuadraticBezier2Df {
-  pub fn new(start: Pt2f, control: Pt2f, end: Pt2f) -> Self {
+  pub fn new(start: Pt2f, control: Pt2f, end: Pt2f, segments: usize) -> Self {
     Self {
       start,
       control,
       end,
+      segments,
     }
   }
 
-  pub fn gen_points(&self, segments: usize) -> Vec<Pt2f> {
-    Pt2f::quadratic_bezier(self.start, self.control, self.end, segments)
+  pub fn gen_points(&self) -> Vec<Pt2f> {
+    Pt2f::quadratic_bezier(self.start, self.control, self.end, self.segments)
   }
 }
 
@@ -411,20 +416,28 @@ pub struct CubicBezier2Df {
   pub control1: Pt2f,
   pub control2: Pt2f,
   pub end: Pt2f,
+  pub segments: usize,
 }
 
 impl CubicBezier2Df {
-  pub fn new(start: Pt2f, control1: Pt2f, control2: Pt2f, end: Pt2f) -> Self {
+  pub fn new(start: Pt2f, control1: Pt2f, control2: Pt2f, end: Pt2f, segments: usize) -> Self {
     Self {
       start,
       control1,
       control2,
       end,
+      segments,
     }
   }
 
-  pub fn gen_points(&self, segments: usize) -> Vec<Pt2f> {
-    Pt2f::cubic_bezier(self.start, self.control1, self.control2, self.end, segments)
+  pub fn gen_points(&self) -> Vec<Pt2f> {
+    Pt2f::cubic_bezier(
+      self.start,
+      self.control1,
+      self.control2,
+      self.end,
+      self.segments,
+    )
   }
 }
 
@@ -435,38 +448,52 @@ pub struct CubicBezierChain2Df {
 }
 
 impl CubicBezierChain2Df {
-  pub fn new(start: Pt2f, control1: Pt2f, control2: Pt2f, end: Pt2f) -> Self {
+  pub fn new(start: Pt2f, control1: Pt2f, control2: Pt2f, end: Pt2f, segments: usize) -> Self {
     Self {
       curves: vec![CubicBezier2Df {
         start,
         control1,
         control2,
         end,
+        segments,
       }],
       closed: false,
     }
   }
 
-  pub fn add(&mut self, control1_length: f32, control2: Pt2f, end: Pt2f) -> &mut Self {
+  pub fn add(
+    &mut self,
+    control1_length: f32,
+    control2: Pt2f,
+    end: Pt2f,
+    segments: usize,
+  ) -> &mut Self {
     let chain_end = &self.curves[self.curves.len() - 1];
     self.curves.push(CubicBezier2Df {
       start: chain_end.end,
       control1: chain_end.end + (chain_end.end - chain_end.control2).normalized() * control1_length,
-      control2: control2,
-      end: end,
+      control2,
+      end,
+      segments,
     });
     self
   }
 
-  pub fn close(&mut self, control1_length: f32, control2: Pt2f, start_control1_len: f32) {
+  pub fn close(
+    &mut self,
+    control1_length: f32,
+    control2: Pt2f,
+    start_control1_len: f32,
+    segments: usize,
+  ) {
     self.closed = true;
-    self.add(control1_length, control2, self.curves[0].start);
+    self.add(control1_length, control2, self.curves[0].start, segments);
     let chain_end = &self.curves[self.curves.len() - 1];
     self.curves[0].control1 =
       chain_end.end + (chain_end.end - chain_end.control2).normalized() * start_control1_len;
   }
 
-  pub fn gen_points(&self, pts_per_section: usize) -> Vec<Pt2f> {
+  pub fn gen_points(&self) -> Vec<Pt2f> {
     let mut pts = vec![Pt2f::new(0.0, 0.0)];
     for i in 0..self.curves.len() {
       pts.pop();
@@ -475,7 +502,7 @@ impl CubicBezierChain2Df {
         self.curves[i].control1,
         self.curves[i].control2,
         self.curves[i].end,
-        pts_per_section,
+        self.curves[i].segments,
       ));
     }
     if self.closed {

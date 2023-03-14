@@ -351,7 +351,7 @@ impl Pt2 {
       );
     }
 
-    let mut chain = CubicBezierChain2D::new(knots[0], controls[0], controls[0], knots[1]);
+    let mut chain = CubicBezierChain2D::new(knots[0], controls[0], controls[0], knots[1], segments);
     for i in 1..(n_knots - 1) {
       chain.add(
         if i % 2 == 0 {
@@ -361,15 +361,17 @@ impl Pt2 {
         },
         controls[i],
         knots[i + 1],
+        segments,
       );
     }
     chain.close(
       inner_handle_length,
       controls[n_knots - 1],
       outer_handle_length,
+      segments,
     );
 
-    chain.gen_points(segments)
+    chain.gen_points()
   }
   pub fn chamfer(size: f64, oversize: f64) -> Vec<Self> {
     vec![
@@ -389,19 +391,21 @@ pub struct QuadraticBezier2D {
   pub start: Pt2,
   pub control: Pt2,
   pub end: Pt2,
+  pub segments: usize,
 }
 
 impl QuadraticBezier2D {
-  pub fn new(start: Pt2, control: Pt2, end: Pt2) -> Self {
+  pub fn new(start: Pt2, control: Pt2, end: Pt2, segments: usize) -> Self {
     Self {
       start,
       control,
       end,
+      segments,
     }
   }
 
-  pub fn gen_points(&self, segments: usize) -> Vec<Pt2> {
-    Pt2::quadratic_bezier(self.start, self.control, self.end, segments)
+  pub fn gen_points(&self) -> Vec<Pt2> {
+    Pt2::quadratic_bezier(self.start, self.control, self.end, self.segments)
   }
 }
 
@@ -411,20 +415,28 @@ pub struct CubicBezier2D {
   pub control1: Pt2,
   pub control2: Pt2,
   pub end: Pt2,
+  pub segments: usize,
 }
 
 impl CubicBezier2D {
-  pub fn new(start: Pt2, control1: Pt2, control2: Pt2, end: Pt2) -> Self {
+  pub fn new(start: Pt2, control1: Pt2, control2: Pt2, end: Pt2, segments: usize) -> Self {
     Self {
       start,
       control1,
       control2,
       end,
+      segments,
     }
   }
 
-  pub fn gen_points(&self, segments: usize) -> Vec<Pt2> {
-    Pt2::cubic_bezier(self.start, self.control1, self.control2, self.end, segments)
+  pub fn gen_points(&self) -> Vec<Pt2> {
+    Pt2::cubic_bezier(
+      self.start,
+      self.control1,
+      self.control2,
+      self.end,
+      self.segments,
+    )
   }
 }
 
@@ -435,38 +447,52 @@ pub struct CubicBezierChain2D {
 }
 
 impl CubicBezierChain2D {
-  pub fn new(start: Pt2, control1: Pt2, control2: Pt2, end: Pt2) -> Self {
+  pub fn new(start: Pt2, control1: Pt2, control2: Pt2, end: Pt2, segments: usize) -> Self {
     Self {
       curves: vec![CubicBezier2D {
         start,
         control1,
         control2,
         end,
+        segments,
       }],
       closed: false,
     }
   }
 
-  pub fn add(&mut self, control1_length: f64, control2: Pt2, end: Pt2) -> &mut Self {
+  pub fn add(
+    &mut self,
+    control1_length: f64,
+    control2: Pt2,
+    end: Pt2,
+    segments: usize,
+  ) -> &mut Self {
     let chain_end = &self.curves[self.curves.len() - 1];
     self.curves.push(CubicBezier2D {
       start: chain_end.end,
       control1: chain_end.end + (chain_end.end - chain_end.control2).normalized() * control1_length,
       control2: control2,
       end: end,
+      segments,
     });
     self
   }
 
-  pub fn close(&mut self, control1_length: f64, control2: Pt2, start_control1_len: f64) {
+  pub fn close(
+    &mut self,
+    control1_length: f64,
+    control2: Pt2,
+    start_control1_len: f64,
+    segments: usize,
+  ) {
     self.closed = true;
-    self.add(control1_length, control2, self.curves[0].start);
+    self.add(control1_length, control2, self.curves[0].start, segments);
     let chain_end = &self.curves[self.curves.len() - 1];
     self.curves[0].control1 =
       chain_end.end + (chain_end.end - chain_end.control2).normalized() * start_control1_len;
   }
 
-  pub fn gen_points(&self, pts_per_section: usize) -> Vec<Pt2> {
+  pub fn gen_points(&self) -> Vec<Pt2> {
     let mut pts = vec![Pt2::new(0.0, 0.0)];
     for i in 0..self.curves.len() {
       pts.pop();
@@ -475,7 +501,7 @@ impl CubicBezierChain2D {
         self.curves[i].control1,
         self.curves[i].control2,
         self.curves[i].end,
-        pts_per_section,
+        self.curves[i].segments,
       ));
     }
     if self.closed {

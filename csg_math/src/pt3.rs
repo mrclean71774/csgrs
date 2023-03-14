@@ -287,19 +287,21 @@ pub struct QuadraticBezier3D {
   pub start: Pt3,
   pub control: Pt3,
   pub end: Pt3,
+  pub segments: usize,
 }
 
 impl QuadraticBezier3D {
-  pub fn new(start: Pt3, control: Pt3, end: Pt3) -> Self {
+  pub fn new(start: Pt3, control: Pt3, end: Pt3, segments: usize) -> Self {
     Self {
       start,
       control,
       end,
+      segments,
     }
   }
 
-  pub fn gen_points(&self, segments: usize) -> Vec<Pt3> {
-    Pt3::quadratic_bezier(self.start, self.control, self.end, segments)
+  pub fn gen_points(&self) -> Vec<Pt3> {
+    Pt3::quadratic_bezier(self.start, self.control, self.end, self.segments)
   }
 }
 
@@ -309,20 +311,28 @@ pub struct CubicBezier3D {
   pub control1: Pt3,
   pub control2: Pt3,
   pub end: Pt3,
+  pub segments: usize,
 }
 
 impl CubicBezier3D {
-  pub fn new(start: Pt3, control1: Pt3, control2: Pt3, end: Pt3) -> Self {
+  pub fn new(start: Pt3, control1: Pt3, control2: Pt3, end: Pt3, segments: usize) -> Self {
     Self {
       start,
       control1,
       control2,
       end,
+      segments,
     }
   }
 
-  pub fn gen_points(&self, segments: usize) -> Vec<Pt3> {
-    Pt3::cubic_bezier(self.start, self.control1, self.control2, self.end, segments)
+  pub fn gen_points(&self) -> Vec<Pt3> {
+    Pt3::cubic_bezier(
+      self.start,
+      self.control1,
+      self.control2,
+      self.end,
+      self.segments,
+    )
   }
 }
 
@@ -333,38 +343,52 @@ pub struct CubicBezierChain3D {
 }
 
 impl CubicBezierChain3D {
-  pub fn new(start: Pt3, control1: Pt3, control2: Pt3, end: Pt3) -> Self {
+  pub fn new(start: Pt3, control1: Pt3, control2: Pt3, end: Pt3, segments: usize) -> Self {
     Self {
       curves: vec![CubicBezier3D {
         start,
         control1,
         control2,
         end,
+        segments,
       }],
       closed: false,
     }
   }
 
-  pub fn add(&mut self, control1_length: f64, control2: Pt3, end: Pt3) -> &mut Self {
+  pub fn add(
+    &mut self,
+    control1_length: f64,
+    control2: Pt3,
+    end: Pt3,
+    segments: usize,
+  ) -> &mut Self {
     let chain_end = &self.curves[self.curves.len() - 1];
     self.curves.push(CubicBezier3D {
       start: chain_end.end,
       control1: chain_end.end + (chain_end.end - chain_end.control2).normalized() * control1_length,
-      control2: control2,
-      end: end,
+      control2,
+      end,
+      segments,
     });
     self
   }
 
-  pub fn close(&mut self, control1_length: f64, control2: Pt3, start_control1_len: f64) {
+  pub fn close(
+    &mut self,
+    control1_length: f64,
+    control2: Pt3,
+    start_control1_len: f64,
+    segments: usize,
+  ) {
     self.closed = true;
-    self.add(control1_length, control2, self.curves[0].start);
+    self.add(control1_length, control2, self.curves[0].start, segments);
     let chain_end = &self.curves[self.curves.len() - 1];
     self.curves[0].control1 =
       chain_end.end + (chain_end.end - chain_end.control2).normalized() * start_control1_len;
   }
 
-  pub fn gen_points(&self, pts_per_section: usize) -> Vec<Pt3> {
+  pub fn gen_points(&self) -> Vec<Pt3> {
     let mut pts = vec![Pt3::new(0.0, 0.0, 0.0)];
     for i in 0..self.curves.len() {
       pts.pop();
@@ -373,7 +397,7 @@ impl CubicBezierChain3D {
         self.curves[i].control1,
         self.curves[i].control2,
         self.curves[i].end,
-        pts_per_section,
+        self.curves[i].segments,
       ));
     }
     if self.closed {
