@@ -768,7 +768,7 @@ impl SCAD {
       lead_in,
       lead_in_degrees,
       left_hand_thread,
-      center,
+      false,
     );
     rod.translate(Pt3::new(0.0, 0.0, head_height));
 
