@@ -442,7 +442,7 @@ impl CubicBezier2D {
 
 #[derive(Clone)]
 pub struct CubicBezierChain2D {
-  curves: Vec<CubicBezier2D>,
+  pub curves: Vec<CubicBezier2D>,
   closed: bool,
 }
 

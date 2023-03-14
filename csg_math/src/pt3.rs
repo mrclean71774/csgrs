@@ -338,7 +338,7 @@ impl CubicBezier3D {
 
 #[derive(Clone)]
 pub struct CubicBezierChain3D {
-  curves: Vec<CubicBezier3D>,
+  pub curves: Vec<CubicBezier3D>,
   closed: bool,
 }
 
