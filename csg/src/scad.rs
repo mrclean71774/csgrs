@@ -918,7 +918,7 @@ fn m_table() -> HashMap<i32, HashMap<&'static str, f64>> {
       5,
       HashMap::from([
         ("pitch", 0.8),
-        ("external_dMaj", 5.826),
+        ("external_dMaj", 4.826),
         ("internal_dMaj", 5.24),
         ("nut_width", 8.0),
       ]),
