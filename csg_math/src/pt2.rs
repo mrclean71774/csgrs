@@ -385,11 +385,47 @@ impl Pt2 {
 }
 
 #[derive(Clone, Copy)]
-struct CubicBezier2D {
-  start: Pt2,
-  control1: Pt2,
-  control2: Pt2,
-  end: Pt2,
+pub struct QuadraticBezier2D {
+  pub start: Pt2,
+  pub control: Pt2,
+  pub end: Pt2,
+}
+
+impl QuadraticBezier2D {
+  pub fn new(start: Pt2, control: Pt2, end: Pt2) -> Self {
+    Self {
+      start,
+      control,
+      end,
+    }
+  }
+
+  pub fn gen_points(&self, segments: usize) -> Vec<Pt2> {
+    Pt2::quadratic_bezier(self.start, self.control, self.end, segments)
+  }
+}
+
+#[derive(Clone, Copy)]
+pub struct CubicBezier2D {
+  pub start: Pt2,
+  pub control1: Pt2,
+  pub control2: Pt2,
+  pub end: Pt2,
+}
+
+impl CubicBezier2D {
+  pub fn new(start: Pt2, control1: Pt2, control2: Pt2, end: Pt2) -> Self {
+    Self {
+      start,
+      control1,
+      control2,
+      end,
+    }
+  }
+
+  pub fn gen_points(&self, segments: usize) -> Vec<Pt2> {
+    Pt2::cubic_bezier(self.start, self.control1, self.control2, self.end, segments)
+  }
 }
 
 #[derive(Clone)]

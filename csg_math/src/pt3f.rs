@@ -283,23 +283,59 @@ impl Pt3f {
 }
 
 #[derive(Clone, Copy)]
-struct CubicBezier3D {
-  start: Pt3f,
-  control1: Pt3f,
-  control2: Pt3f,
-  end: Pt3f,
+pub struct QuadraticBezier3Df {
+  pub start: Pt3f,
+  pub control: Pt3f,
+  pub end: Pt3f,
+}
+
+impl QuadraticBezier3Df {
+  pub fn new(start: Pt3f, control: Pt3f, end: Pt3f) -> Self {
+    Self {
+      start,
+      control,
+      end,
+    }
+  }
+
+  pub fn gen_points(&self, segments: usize) -> Vec<Pt3f> {
+    Pt3f::quadratic_bezier(self.start, self.control, self.end, segments)
+  }
+}
+
+#[derive(Clone, Copy)]
+pub struct CubicBezier3Df {
+  pub start: Pt3f,
+  pub control1: Pt3f,
+  pub control2: Pt3f,
+  pub end: Pt3f,
+}
+
+impl CubicBezier3Df {
+  pub fn new(start: Pt3f, control1: Pt3f, control2: Pt3f, end: Pt3f) -> Self {
+    Self {
+      start,
+      control1,
+      control2,
+      end,
+    }
+  }
+
+  pub fn gen_points(&self, segments: usize) -> Vec<Pt3f> {
+    Pt3f::cubic_bezier(self.start, self.control1, self.control2, self.end, segments)
+  }
 }
 
 #[derive(Clone)]
 pub struct CubicBezierChain3Df {
-  curves: Vec<CubicBezier3D>,
+  curves: Vec<CubicBezier3Df>,
   closed: bool,
 }
 
 impl CubicBezierChain3Df {
   pub fn new(start: Pt3f, control1: Pt3f, control2: Pt3f, end: Pt3f) -> Self {
     Self {
-      curves: vec![CubicBezier3D {
+      curves: vec![CubicBezier3Df {
         start,
         control1,
         control2,
@@ -311,7 +347,7 @@ impl CubicBezierChain3Df {
 
   pub fn add(&mut self, control1_length: f32, control2: Pt3f, end: Pt3f) -> &mut Self {
     let chain_end = &self.curves[self.curves.len() - 1];
-    self.curves.push(CubicBezier3D {
+    self.curves.push(CubicBezier3Df {
       start: chain_end.end,
       control1: chain_end.end + (chain_end.end - chain_end.control2).normalized() * control1_length,
       control2: control2,

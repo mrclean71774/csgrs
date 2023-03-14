@@ -283,11 +283,47 @@ impl Pt3 {
 }
 
 #[derive(Clone, Copy)]
-struct CubicBezier3D {
-  start: Pt3,
-  control1: Pt3,
-  control2: Pt3,
-  end: Pt3,
+pub struct QuadraticBezier3D {
+  pub start: Pt3,
+  pub control: Pt3,
+  pub end: Pt3,
+}
+
+impl QuadraticBezier3D {
+  pub fn new(start: Pt3, control: Pt3, end: Pt3) -> Self {
+    Self {
+      start,
+      control,
+      end,
+    }
+  }
+
+  pub fn gen_points(&self, segments: usize) -> Vec<Pt3> {
+    Pt3::quadratic_bezier(self.start, self.control, self.end, segments)
+  }
+}
+
+#[derive(Clone, Copy)]
+pub struct CubicBezier3D {
+  pub start: Pt3,
+  pub control1: Pt3,
+  pub control2: Pt3,
+  pub end: Pt3,
+}
+
+impl CubicBezier3D {
+  pub fn new(start: Pt3, control1: Pt3, control2: Pt3, end: Pt3) -> Self {
+    Self {
+      start,
+      control1,
+      control2,
+      end,
+    }
+  }
+
+  pub fn gen_points(&self, segments: usize) -> Vec<Pt3> {
+    Pt3::cubic_bezier(self.start, self.control1, self.control2, self.end, segments)
+  }
 }
 
 #[derive(Clone)]
