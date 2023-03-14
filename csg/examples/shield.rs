@@ -50,9 +50,9 @@ fn main() {
 
   // create the right side profile with a 2 link cubic bezier chain
   // and a quadratic bezier
-  let mut lower_right_curve = CubicBezierChain2D::new(bottom_center, cp1, cp2, end1);
-  lower_right_curve.add(1.0, cp3, end2);
-  let mut profile = lower_right_curve.gen_points(12);
+  let mut lower_right_curve = CubicBezierChain2D::new(bottom_center, cp1, cp2, end1, 12);
+  lower_right_curve.add(1.0, cp3, end2, 12);
+  let mut profile = lower_right_curve.gen_points();
   profile.append(&mut Pt2::quadratic_bezier(top_right, cp4, top_center, 6));
 
   // copy everything but the first and last points in the right side to the left
@@ -67,7 +67,7 @@ fn main() {
 
   if save_viewer {
     let mut viewer = Viewer::new(0.3, 0.15, 6);
-    viewer.add_vert2s(&profile);
+    viewer.add_pt2s(profile);
     viewer.render().into_scad().save_scad("out/shield.scad");
   } else {
     let shield = Mesh::linear_extrude(&profile, 0.5);

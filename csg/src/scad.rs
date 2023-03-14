@@ -24,7 +24,7 @@
 // NOTE: OpenSCAD uses clockwise winding order.
 
 use {
-  crate::{dcos, dsin, Mesh, Pt3, VecPt3},
+  crate::{dcos, dsin, Mesh, Mt4, Pt3, VecPt3},
   std::collections::HashMap,
   std::io::Write,
 };
@@ -120,6 +120,12 @@ impl SCAD {
     }
 
     Self::from_verts_and_index(vertices, indices)
+  }
+
+  pub fn apply_matrix(&mut self, m: Mt4) {
+    for vert in &mut self.vertices {
+      *vert = m * *vert;
+    }
   }
 
   pub fn translate(&mut self, v: Pt3) {

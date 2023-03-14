@@ -20,29 +20,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod bsp_node;
-mod csg;
-mod ear_clip;
-mod mesh;
-mod plane;
-mod polygon;
-mod scad;
-mod triangle;
-mod viewer;
+//! In this example we will use the SCADViewer to visualize a curve. The control
+//! points of the curves will be red and the points will be yellow in the viewer.
+//! The main reason to use a SCADViewer over a Viewer is the ease of displaying
+//! curves.
 
-pub use {
-  bsp_node::BSPNode,
-  csg::CSG,
-  csg_math::{
-    approx_eq, dacos, dasin, datan, dcos, dsin, dtan, CubicBezier2D, CubicBezier3D,
-    CubicBezierChain2D, CubicBezierChain3D, MersenneTwister, Mt4, Pt2, Pt3, Pt4, QuadraticBezier2D,
-    QuadraticBezier3D, VecPt2, VecPt3,
-  },
-  ear_clip::{triangulate2d, triangulate3d},
-  mesh::Mesh,
-  plane::Plane,
-  polygon::Polygon,
-  scad::{SCADColor, SCAD},
-  triangle::{Triangle, VecTriangle},
-  viewer::{SCADViewer, Viewer},
-};
+use csg::{CubicBezier2D, Pt2, SCADViewer};
+
+fn main() {
+  let cubic_bezier_2d = CubicBezier2D::new(
+    Pt2::new(0.0, 0.0),
+    Pt2::new(-5.0, 5.0),
+    Pt2::new(5.0, 10.0),
+    Pt2::new(0.0, 20.0),
+    10,
+  );
+  let mut viewer = SCADViewer::new(0.5, 0.25, 6);
+  viewer.add_cubic_bezier2d(cubic_bezier_2d);
+  viewer.render().save_scad("out/scad_viewer.scad");
+}

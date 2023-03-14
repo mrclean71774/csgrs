@@ -28,13 +28,16 @@
 //! not do boolean operations on the added points and meshes it just adds more
 //! triangles to the mesh.
 
-use crate::{Mesh, Mt4, Pt2, Pt3};
+use crate::{
+  CubicBezier2D, CubicBezier3D, Mesh, Mt4, Pt2, Pt3, QuadraticBezier2D, QuadraticBezier3D,
+  SCADColor, SCAD,
+};
 
 pub struct Viewer {
-  vert_radius: f64,
+  point_radius: f64,
   edge_radius: f64,
   segments: usize,
-  verts: Vec<Pt3>,
+  points: Vec<Pt3>,
   edges: Vec<(Pt3, Pt3)>,
 }
 
@@ -48,12 +51,12 @@ impl Viewer {
   /// segments: The number of segments in a circle.
   ///
   /// return: The viewer.
-  pub fn new(vert_radius: f64, edge_radius: f64, segments: usize) -> Self {
+  pub fn new(point_radius: f64, edge_radius: f64, segments: usize) -> Self {
     Self {
-      vert_radius,
+      point_radius,
       edge_radius,
       segments,
-      verts: Vec::new(),
+      points: Vec::new(),
       edges: Vec::new(),
     }
   }
@@ -75,36 +78,43 @@ impl Viewer {
   /// Add a vertex to the viewer.
   ///
   /// vert: The vertex to add.
-  pub fn add_vert(&mut self, vert: Pt3) {
-    self.verts.push(vert);
+  pub fn add_pt3(&mut self, point: Pt3) {
+    self.points.push(point);
   }
 
   /// Add an array of vertices to the viewer.
   ///
   /// verts: The array of vertices.
-  pub fn add_verts(&mut self, mut verts: Vec<Pt3>) {
-    self.verts.append(&mut verts);
+  pub fn add_pt3s(&mut self, mut points: Vec<Pt3>) {
+    self.points.append(&mut points);
   }
 
-  /// Add an array of 2D vertices to the viewer.\
+  /// Add a point to the viewer.
   ///
   /// verts: The array of 2D vertices.
-  pub fn add_vert2s(&mut self, verts: &Vec<Pt2>) {
-    for vert in verts {
-      self.verts.push(vert.as_pt3(0.0));
+  pub fn add_pt2(&mut self, point: Pt2) {
+    self.add_pt3(point.as_pt3(0.0));
+  }
+
+  /// Add an array of 2D points to the viewer.
+  ///
+  /// points: The array of 2D points.
+  pub fn add_pt2s(&mut self, points: Vec<Pt2>) {
+    for point in points {
+      self.add_pt2(point);
     }
   }
 
-  /// Render the points and edges of a mesh.
+  /// Render the points and edges stored in viewer to a mesh.
   ///
   /// return: A mesh containing all the points and edges.
   pub fn render(&self) -> Mesh {
     let mut mesh = Mesh {
       triangles: Vec::new(),
     };
-    for vert in &self.verts {
-      let mut s = Mesh::sphere(self.vert_radius, self.segments);
-      s.translate(*vert);
+    for point in &self.points {
+      let mut s = Mesh::sphere(self.point_radius, self.segments);
+      s.translate(*point);
 
       mesh.triangles.append(&mut s.triangles);
     }
@@ -129,5 +139,153 @@ impl Viewer {
     }
 
     mesh
+  }
+}
+
+pub struct SCADViewer {
+  point_radius: f64,
+  edge_radius: f64,
+  segments: usize,
+  scad: Option<SCAD>,
+}
+
+impl SCADViewer {
+  /// Create a new viewer.
+  ///
+  /// vert_radius: The radius of vertex points.
+  ///
+  /// edge_radius: The radius of an edge.
+  ///
+  /// segments: The number of segments in a circle.
+  ///
+  /// return: The viewer.
+  pub fn new(vert_radius: f64, edge_radius: f64, segments: usize) -> Self {
+    Self {
+      point_radius: vert_radius,
+      edge_radius,
+      segments,
+      scad: None,
+    }
+  }
+
+  /// Add an edge to the viewer.
+  ///
+  /// edge: The points that define the edge.
+  pub fn add_edge(&mut self, edge: (Pt3, Pt3)) {
+    let m = Mt4::look_at_matrix_lh(edge.0, edge.1, Pt3::new(0.0, 0.0, 1.0));
+    let mut c = Mesh::cylinder(
+      self.edge_radius,
+      self.edge_radius,
+      (edge.1 - edge.0).len(),
+      self.segments,
+      false,
+    )
+    .into_scad();
+    c.apply_matrix(m);
+    c.translate(edge.0);
+
+    if let Some(scad) = &mut self.scad {
+      self.scad = Some(scad.clone() + c);
+    } else {
+      self.scad = Some(c);
+    }
+  }
+
+  /// Add an array of edges to the viewer.
+  ///
+  /// edges: The array of edges.
+  pub fn add_edges(&mut self, edges: &Vec<(Pt3, Pt3)>) {
+    for edge in edges {
+      self.add_edge(*edge);
+    }
+  }
+
+  fn add_pt3_colored(&mut self, pt: Pt3, color: SCADColor) {
+    let mut s = Mesh::sphere(self.point_radius, self.segments).into_scad();
+    s.color = Some(color);
+    s.translate(pt);
+
+    if let Some(scad) = &mut self.scad {
+      self.scad = Some(scad.clone() + s);
+    } else {
+      self.scad = Some(s);
+    }
+  }
+
+  /// Add a point to the viewer.
+  ///
+  /// pt: The point to add.
+  pub fn add_pt3(&mut self, pt: Pt3) {
+    self.add_pt3_colored(pt, SCADColor::Yellow);
+  }
+
+  /// Add an array of points to the viewer.
+  ///
+  /// points: The array of points.
+  pub fn add_pt3s(&mut self, points: Vec<Pt3>) {
+    for point in points {
+      self.add_pt3(point);
+    }
+  }
+
+  /// Add a point to the viewer.
+  ///
+  /// pt: The point to add.
+  pub fn add_pt2(&mut self, pt: Pt2) {
+    self.add_pt3(pt.as_pt3(0.0));
+  }
+
+  /// Add an array of 2D points to the viewer.
+  ///
+  /// points: The array of 2D points.
+  pub fn add_pt2s(&mut self, points: Vec<Pt2>) {
+    for point in points {
+      self.add_pt2(point);
+    }
+  }
+
+  /// Add a quadratic bezier curve to the viewer.
+  ///
+  /// curve: The curve to add.
+  pub fn add_quadratic_bezier2d(&mut self, curve: QuadraticBezier2D) {
+    self.add_pt2s(curve.gen_points());
+    self.add_pt3_colored(curve.control.as_pt3(0.0), SCADColor::Red);
+  }
+
+  /// Add a cubic bezier curve to the viewer.
+  ///
+  /// curve: The curve to add.
+  pub fn add_cubic_bezier2d(&mut self, curve: CubicBezier2D) {
+    self.add_pt2s(curve.gen_points());
+    self.add_pt3_colored(curve.control1.as_pt3(0.0), SCADColor::Red);
+    self.add_pt3_colored(curve.control2.as_pt3(0.0), SCADColor::Red);
+  }
+
+  /// Add a quadratic bezier curve to the viewer.
+  ///
+  /// curve: The curve to add.
+  pub fn add_quadratic_bezier3d(&mut self, curve: QuadraticBezier3D) {
+    self.add_pt3s(curve.gen_points());
+    self.add_pt3_colored(curve.control, SCADColor::Red);
+  }
+
+  /// Add a cubic bezier curve to the viewer.
+  ///
+  /// curve: The curve to add.
+  pub fn add_cubic_bezier3d(&mut self, curve: CubicBezier3D) {
+    self.add_pt3s(curve.gen_points());
+    self.add_pt3_colored(curve.control1, SCADColor::Red);
+    self.add_pt3_colored(curve.control2, SCADColor::Red);
+  }
+
+  /// Render the points and edges of a mesh.
+  ///
+  /// return: A mesh containing all the points and edges.
+  pub fn render(self) -> SCAD {
+    if let Some(scad) = self.scad {
+      return scad;
+    } else {
+      panic!("Called render on an empty SCADViewer");
+    }
   }
 }

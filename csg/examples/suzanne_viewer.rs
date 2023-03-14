@@ -29,7 +29,7 @@ fn main() {
   let suzanne = Mesh::load_stl("in/suzanne.stl");
   let mut viewer = Viewer::new(0.1, 0.05, 12);
 
-  viewer.add_verts(suzanne.vertices());
+  viewer.add_pt3s(suzanne.vertices());
   viewer.add_edges(suzanne.edges());
 
   viewer.render().save_stl_bin("out/SuzanneViewer.stl");
