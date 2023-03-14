@@ -29,8 +29,8 @@
 //! triangles to the mesh.
 
 use crate::{
-  CubicBezier2D, CubicBezier3D, Mesh, Mt4, Pt2, Pt3, QuadraticBezier2D, QuadraticBezier3D,
-  SCADColor, SCAD,
+  CubicBezier2D, CubicBezier3D, CubicBezierChain2D, CubicBezierChain3D, Mesh, Mt4, Pt2, Pt3,
+  QuadraticBezier2D, QuadraticBezier3D, SCADColor, SCAD,
 };
 
 pub struct Viewer {
@@ -222,9 +222,9 @@ impl SCADViewer {
   /// Add an array of points to the viewer.
   ///
   /// points: The array of points.
-  pub fn add_pt3s(&mut self, points: Vec<Pt3>) {
+  pub fn add_pt3s(&mut self, points: &Vec<Pt3>) {
     for point in points {
-      self.add_pt3(point);
+      self.add_pt3(*point);
     }
   }
 
@@ -261,11 +261,20 @@ impl SCADViewer {
     self.add_pt3_colored(curve.control2.as_pt3(0.0), SCADColor::Red);
   }
 
+  /// Add a cubic bezier chain to the viewer.
+  ///
+  /// chain: A cubic bezier chain.
+  pub fn add_cubic_bezier_chain2d(&mut self, chain: CubicBezierChain2D) {
+    for curve in chain.curves {
+      self.add_cubic_bezier2d(curve);
+    }
+  }
+
   /// Add a quadratic bezier curve to the viewer.
   ///
   /// curve: The curve to add.
   pub fn add_quadratic_bezier3d(&mut self, curve: QuadraticBezier3D) {
-    self.add_pt3s(curve.gen_points());
+    self.add_pt3s(&curve.gen_points());
     self.add_pt3_colored(curve.control, SCADColor::Red);
   }
 
@@ -273,9 +282,18 @@ impl SCADViewer {
   ///
   /// curve: The curve to add.
   pub fn add_cubic_bezier3d(&mut self, curve: CubicBezier3D) {
-    self.add_pt3s(curve.gen_points());
+    self.add_pt3s(&curve.gen_points());
     self.add_pt3_colored(curve.control1, SCADColor::Red);
     self.add_pt3_colored(curve.control2, SCADColor::Red);
+  }
+
+  /// Add a cubic bezier chain to the viewer.
+  ///
+  /// chain: A cubic bezier chain.
+  pub fn add_cubic_bezier_chain3d(&mut self, chain: CubicBezierChain3D) {
+    for curve in chain.curves {
+      self.add_cubic_bezier3d(curve);
+    }
   }
 
   /// Render the points and edges of a mesh.
