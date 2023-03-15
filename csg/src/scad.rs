@@ -31,10 +31,11 @@ use {
 
 /// The three boolean operations in OpenSCAD
 #[derive(Clone, Copy)]
-enum BoolOp {
-  Union,
-  Difference,
-  Intersection,
+enum ScadOp {
+  Union,        // +
+  Difference,   // -
+  Intersection, // *
+  Hull,         // hull
 }
 
 /// SCAD is a binary tree. Each node is either a "mesh" or an operation with two children.
@@ -42,7 +43,7 @@ enum BoolOp {
 pub struct SCAD {
   vertices: Vec<Pt3>,
   indices: Vec<usize>,
-  op: Option<BoolOp>,
+  op: Option<ScadOp>,
   children: Vec<SCAD>,
   pub color: Option<SCADColor>,
 }
@@ -130,8 +131,9 @@ impl SCAD {
 
   pub fn translate(&mut self, v: Pt3) {
     if self.vertices.len() == 0 {
-      self.children[0].translate(v);
-      self.children[1].translate(v);
+      for i in 0..self.children.len() {
+        self.children[i].translate(v);
+      }
     } else {
       self.vertices.translate(v);
     }
@@ -190,17 +192,23 @@ impl std::fmt::Display for SCAD {
         write!(f, "color(\"{:?}\")", color)?;
       }
       match self.op.unwrap() {
-        BoolOp::Union => {
+        ScadOp::Union => {
           write!(f, "union() {{\n")?;
         }
-        BoolOp::Difference => {
+        ScadOp::Difference => {
           write!(f, "difference() {{\n")?;
         }
-        BoolOp::Intersection => {
+        ScadOp::Intersection => {
           write!(f, "intersection() {{\n")?;
         }
+        ScadOp::Hull => {
+          write!(f, "hull() {{\n")?;
+        }
       }
-      write!(f, "{}\n{}\n}}\n", self.children[0], self.children[1])
+      for i in 0..self.children.len() {
+        write!(f, "{}\n", self.children[i])?;
+      }
+      write!(f, "}}\n")
     } else {
       if let Some(color) = self.color {
         write!(f, "color(\"{:?}\")", color)?;
@@ -259,7 +267,7 @@ impl std::ops::Sub for SCAD {
     Self {
       vertices: Vec::new(),
       indices: Vec::new(),
-      op: Some(BoolOp::Difference),
+      op: Some(ScadOp::Difference),
       children: vec![self, rhs],
       color: None,
     }
@@ -273,7 +281,7 @@ impl std::ops::Add for SCAD {
     Self {
       vertices: Vec::new(),
       indices: Vec::new(),
-      op: Some(BoolOp::Union),
+      op: Some(ScadOp::Union),
       children: vec![self, rhs],
       color: None,
     }
@@ -287,10 +295,74 @@ impl std::ops::Mul for SCAD {
     Self {
       vertices: Vec::new(),
       indices: Vec::new(),
-      op: Some(BoolOp::Intersection),
+      op: Some(ScadOp::Intersection),
       children: vec![self, rhs],
       color: None,
     }
+  }
+}
+
+impl SCAD {
+  pub fn hullv(children: Vec<Self>) -> Self {
+    Self {
+      vertices: Vec::new(),
+      indices: Vec::new(),
+      op: Some(ScadOp::Hull),
+      children,
+      color: None,
+    }
+  }
+
+  pub fn hull(self, rhs: Self) -> Self {
+    Self {
+      vertices: Vec::new(),
+      indices: Vec::new(),
+      op: Some(ScadOp::Hull),
+      children: vec![self, rhs],
+      color: None,
+    }
+  }
+
+  pub fn rounded_cube(x: f64, y: f64, z: f64, r: f64, segments: usize, center: bool) -> Self {
+    let x = x / 2.0;
+    let y = y / 2.0;
+    let z = z / 2.0;
+    let mut children = Vec::with_capacity(8);
+    let mut s = Mesh::sphere(r, segments).into_scad();
+    s.translate(Pt3::new(x - r, y - r, z - r));
+    children.push(s);
+    let mut s = Mesh::sphere(r, segments).into_scad();
+    s.translate(Pt3::new(-x + r, y - r, z - r));
+    children.push(s);
+    let mut s = Mesh::sphere(r, segments).into_scad();
+    s.translate(Pt3::new(x - r, -y + r, z - r));
+    children.push(s);
+    let mut s = Mesh::sphere(r, segments).into_scad();
+    s.translate(Pt3::new(-x + r, -y + r, z - r));
+    children.push(s);
+    let mut s = Mesh::sphere(r, segments).into_scad();
+    s.translate(Pt3::new(x - r, y - r, -z + r));
+    children.push(s);
+    let mut s = Mesh::sphere(r, segments).into_scad();
+    s.translate(Pt3::new(-x + r, y - r, -z + r));
+    children.push(s);
+    let mut s = Mesh::sphere(r, segments).into_scad();
+    s.translate(Pt3::new(x - r, -y + r, -z + r));
+    children.push(s);
+    let mut s = Mesh::sphere(r, segments).into_scad();
+    s.translate(Pt3::new(-x + r, -y + r, -z + r));
+    children.push(s);
+    let mut rc = Self {
+      vertices: Vec::new(),
+      indices: Vec::new(),
+      op: Some(ScadOp::Hull),
+      children,
+      color: None,
+    };
+    if !center {
+      rc.translate(Pt3::new(x, y, z));
+    }
+    rc
   }
 }
 
