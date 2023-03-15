@@ -322,6 +322,34 @@ impl Mesh {
     result
   }
 
+  /// Create a taurus
+  ///
+  /// profile_radius: The radius of the circle that is extruded to make the torus.
+  ///
+  /// profile_segments: The number of segments in the profile.
+  ///
+  /// torus_radius: The distance from the center of the torus to the center of the profile.
+  ///
+  /// torus_segments: The number of segments in the extrusion of the circle.
+  ///
+  /// center: If true the torus is centered at the world origin else is "sits" on it.
+  ///
+  /// return: The torus mesh.
+  pub fn torus(
+    profile_radius: f64,
+    profile_segments: usize,
+    torus_radius: f64,
+    torus_segments: usize,
+    center: bool,
+  ) -> Self {
+    let mut profile = Pt2::circle(profile_radius, profile_segments);
+    profile.translate(Pt2::new(
+      torus_radius,
+      if center { 0.0 } else { profile_radius },
+    ));
+    Self::rotate_extrude(&profile, 360.0, torus_segments)
+  }
+
   /// Creates a linear shape that can be used to chamfer a corner.
   ///
   /// size: The height and width of the angled part of the chamfer.
