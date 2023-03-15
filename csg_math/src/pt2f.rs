@@ -214,6 +214,10 @@ impl Pt2f {
     pts
   }
 
+  pub fn circle(radius: f32, segments: usize) -> Vec<Self> {
+    Self::arc(Self::new(radius, 0.0), 360.0, segments)
+  }
+
   pub fn rounded_rect(
     width: f32,
     height: f32,
