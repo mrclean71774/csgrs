@@ -26,9 +26,8 @@ for all but the simplest meshes.
 
 * csg - csg is the main crate with some examples of usage.
 * csg_math - csg_math crate has linear algebra and other math stuff most of which is re-exported from csg.
-* images - images contains images of things created with this library.
 * in - in contains any files needed for input for the examples.
-* out - out contains output from the examples minus the .scad files.
+* out - out contains output from the examples.
 
 ---
 
