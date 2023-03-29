@@ -26,9 +26,7 @@
 //! '-' for difference, and '*' for intersection.
 
 use {
-  crate::{
-    dcos, dsin, triangulate3d, Mt4, Pt2, Pt3, Triangle, VecPt2, VecPt3, VecTriangle, CSG, SCAD,
-  },
+  crate::{dcos, dsin, triangulate3d, Mt4, Pt2, Pt3, Triangle, VecPt2, VecPt3, VecTriangle, CSG},
   std::io::{Read, Write},
 };
 
@@ -76,11 +74,6 @@ impl Mesh {
       ));
     }
     Self::from_triangles(triangles)
-  }
-
-  /// Turn the Mesh into a SCAD object for use with the OpenSCAD backend.
-  pub fn into_scad(self) -> SCAD {
-    SCAD::from_mesh(self)
   }
 
   /// Return an array of the unique vertices in a mesh.

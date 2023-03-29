@@ -23,7 +23,6 @@
 mod csg;
 mod ear_clip;
 mod mesh;
-mod scad;
 mod triangle;
 mod viewer;
 
@@ -36,7 +35,6 @@ pub use {
   },
   ear_clip::{triangulate2d, triangulate3d},
   mesh::Mesh,
-  scad::{SCADColor, SCAD},
   triangle::{Triangle, VecTriangle},
-  viewer::{SCADViewer, Viewer},
+  viewer::Viewer,
 };

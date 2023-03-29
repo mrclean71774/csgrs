@@ -23,24 +23,16 @@
 //! A double precision, non generic, math library.
 
 mod mt4;
-mod mt4f;
 mod pt2;
-mod pt2f;
 mod pt3;
-mod pt3f;
 mod pt4;
-mod pt4f;
 mod rng;
 
 pub use {
   mt4::Mt4,
-  mt4f::Mt4f,
   pt2::{CubicBezier2D, CubicBezierChain2D, Pt2, QuadraticBezier2D, VecPt2},
-  pt2f::{CubicBezier2Df, CubicBezierChain2Df, Pt2f, QuadraticBezier2Df, VecPt2f},
   pt3::{CubicBezier3D, CubicBezierChain3D, Pt3, QuadraticBezier3D, VecPt3},
-  pt3f::{CubicBezier3Df, CubicBezierChain3Df, Pt3f, QuadraticBezier3Df, VecPt3f},
   pt4::Pt4,
-  pt4f::Pt4f,
   rng::MersenneTwister,
 };
 

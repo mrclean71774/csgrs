@@ -20,10 +20,6 @@ I started with a port of [pycsg](https://github.com/timknip/pycsg) and the algor
 always produce watertight meshes. In fact the stl files produced, while still looking ok, are not watertight
 for all but the simplest meshes.
 
-Since the meshes produced by the [pycsg](https://github.com/timknip/pycsg) port are not watertight I have added a
-way to export [OpenSCAD](openscad.org) code and then [OpenSCAD](openscad.org) can do the booleans and produce watertight meshes for
-3D printing etc.
-
 ---
 
 ## Project Structure
@@ -36,6 +32,5 @@ way to export [OpenSCAD](openscad.org) code and then [OpenSCAD](openscad.org) ca
 
 ---
 
-A [Blender](blender.org) rendor of some nuts, bolts, and threaded rod that were produced with the OpenSCAD backend.
-
-![iso_metric.png](https://github.com/mrclean71774/csgrs/blob/main/images/iso_metric.png)
+Since the meshes produced by the [pycsg](https://github.com/timknip/pycsg) port are not watertight I have created
+another [repository](https://github.com/mrclean71774/scad_tree) that can export [OpenSCAD](openscad.org) code.

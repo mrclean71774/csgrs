@@ -68,7 +68,7 @@ fn main() {
   if save_viewer {
     let mut viewer = Viewer::new(0.3, 0.15, 6);
     viewer.add_pt2s(profile);
-    viewer.render().into_scad().save_scad("out/shield.scad");
+    viewer.render().save_stl_bin("out/shield.stl");
   } else {
     let shield = Mesh::linear_extrude(&profile, 0.5);
     shield.save_stl_bin("out/shield.stl")
