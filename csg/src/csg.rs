@@ -25,16 +25,14 @@
 
 use crate::{Mesh, Pt3, Triangle};
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct CSG {
   pub polygons: Vec<Polygon>,
 }
 
 impl CSG {
   pub fn new() -> Self {
-    Self {
-      polygons: Vec::new(),
-    }
+    Self::default()
   }
 
   pub fn from_mesh(mesh: Mesh) -> Self {
@@ -74,8 +72,8 @@ impl CSG {
         continue;
       }
       let mut mid_pos = Pt3::new(0.0, 0.0, 0.0);
-      for i in 0..num_verts {
-        mid_pos += verts[i];
+      for vert in verts.iter() {
+        mid_pos += *vert;
       }
       mid_pos /= num_verts as f64;
 
@@ -208,8 +206,8 @@ impl BSPNode {
       back: None,
       polygons: Vec::new(),
     };
-    if polygons.is_some() {
-      node.build(polygons.unwrap());
+    if let Some(polygons) = polygons {
+      node.build(polygons);
     }
     node
   }
@@ -277,8 +275,7 @@ impl BSPNode {
   }
 
   pub fn build(&mut self, polygons: Vec<Polygon>) {
-    let n_polygons = polygons.len();
-    if n_polygons == 0 {
+    if polygons.is_empty() {
       return;
     }
     if self.plane.is_none() {
@@ -287,22 +284,22 @@ impl BSPNode {
     self.polygons.push(polygons[0].clone());
     let mut front: Vec<Polygon> = Vec::new();
     let mut back: Vec<Polygon> = Vec::new();
-    for i in 1..n_polygons {
+    for polygon in polygons.iter().skip(1) {
       self.plane.as_mut().unwrap().split_polygon(
-        &polygons[i],
+        polygon,
         &mut self.polygons,
         &mut self.polygons,
         &mut front,
         &mut back,
       );
     }
-    if front.len() > 0 {
+    if !front.is_empty() {
       if self.front.is_none() {
         self.front = Some(Box::new(BSPNode::new(None)));
       }
       self.front.as_mut().unwrap().build(front);
     }
-    if back.len() > 0 {
+    if !back.is_empty() {
       if self.back.is_none() {
         self.back = Some(Box::new(BSPNode::new(None)));
       }
@@ -355,7 +352,7 @@ impl Plane {
     self.w = -self.w;
   }
 
-  pub fn split_polygon(
+  fn split_polygon(
     &self,
     polygon: &Polygon,
     coplanar_front: *mut Vec<Polygon>,

@@ -63,7 +63,7 @@ impl Mesh {
   /// indices: The list of indices into the vertices. Always a multiple of three long.
   ///
   /// return: The mesh.
-  pub fn from_verts(vertices: &Vec<Pt3>, indices: &Vec<usize>) -> Self {
+  pub fn from_verts(vertices: &[Pt3], indices: &[usize]) -> Self {
     assert!(indices.len() % 3 == 0);
     let mut triangles = Vec::with_capacity(indices.len() / 3);
     for i in (0..indices.len()).step_by(3) {
@@ -268,12 +268,13 @@ impl Mesh {
     segments: usize,
     center: bool,
   ) -> Self {
-    let mut points_2d = Vec::new();
-    points_2d.push(Pt2::new(0.0, 0.0));
-    points_2d.push(Pt2::new(shaft_radius, 0.0));
-    points_2d.push(Pt2::new(shaft_radius, shaft_length));
-    points_2d.push(Pt2::new(shaft_radius + head_radius, head_start));
-    points_2d.push(Pt2::new(0.0, shaft_length + head_length));
+    let mut points_2d = vec![
+      Pt2::new(0.0, 0.0),
+      Pt2::new(shaft_radius, 0.0),
+      Pt2::new(shaft_radius, shaft_length),
+      Pt2::new(shaft_radius + head_radius, head_start),
+      Pt2::new(0.0, shaft_length + head_length),
+    ];
     if center {
       points_2d.translate(
         Pt2::new(
@@ -462,7 +463,7 @@ impl Mesh {
   /// height: The height of the resulting shape.
   ///
   /// return: The mesh.
-  pub fn linear_extrude(profile: &Vec<Pt2>, height: f64) -> Self {
+  pub fn linear_extrude(profile: &[Pt2], height: f64) -> Self {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     let profile_len = profile.len();
@@ -473,8 +474,8 @@ impl Mesh {
       vertices.push(profile[profile_len - 1 - i].as_pt3(0.0));
     }
     indices.append(&mut triangulate3d(&vertices, Pt3::new(0.0, 0.0, -1.0)));
-    for i in 0..profile_len {
-      vertices.push(profile[i].as_pt3(height));
+    for vert in profile.iter() {
+      vertices.push(vert.as_pt3(height));
     }
     for p0 in 0..profile_len {
       let p1 = (p0 + 1) % profile_len;
@@ -491,12 +492,7 @@ impl Mesh {
     Self::from_verts(&vertices, &indices)
   }
 
-  pub fn linear_twist_extrude(
-    profile: &Vec<Pt2>,
-    length: f64,
-    twist: f64,
-    segments: usize,
-  ) -> Self {
+  pub fn linear_twist_extrude(profile: &[Pt2], length: f64, twist: f64, segments: usize) -> Self {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     let profile: Vec<Pt3> = profile.iter().map(|p| p.as_pt3(0.0)).collect();
@@ -506,15 +502,14 @@ impl Mesh {
     let twist_a = twist / segments as f64;
     indices.append(&mut triangulate3d(&profile_rev, Pt3::new(0.0, 0.0, -1.0)));
 
-    for i in 0..profile_len {
-      vertices.push(profile_rev[i]);
+    for vert in profile_rev.iter() {
+      vertices.push(*vert);
     }
 
     for segment in 1..segments {
-      for i in 0..profile_len {
+      for (i, vert) in profile_rev.iter().enumerate() {
         vertices.push(
-          profile_rev[i].rotated_z(twist_a * segment as f64)
-            + Pt3::new(0.0, 0.0, z_step * segment as f64),
+          vert.rotated_z(twist_a * segment as f64) + Pt3::new(0.0, 0.0, z_step * segment as f64),
         );
         let p0 = (segment - 1) * profile_len + i;
         let p1 = (segment - 1) * profile_len + ((i + 1) % profile_len);
@@ -525,10 +520,9 @@ impl Mesh {
       }
     }
 
-    for i in 0..profile_len {
+    for vert in profile.iter() {
       vertices.push(
-        profile[i].rotated_z(twist_a * segments as f64)
-          + Pt3::new(0.0, 0.0, z_step * segments as f64),
+        vert.rotated_z(twist_a * segments as f64) + Pt3::new(0.0, 0.0, z_step * segments as f64),
       );
     }
     for i in 0..profile_len {
@@ -555,7 +549,7 @@ impl Mesh {
   /// segments: The number of segments in a circle.
   ///
   /// return: The mesh.
-  pub fn revolve(profile: &Vec<Pt2>, segments: usize) -> Self {
+  pub fn revolve(profile: &[Pt2], segments: usize) -> Self {
     assert!(profile.len() > 2);
     let stride = profile.len() - 2;
     let mut vertices = Vec::new();
@@ -930,7 +924,7 @@ impl Mesh {
       v.append(&mut space);
     }
     let mut file = std::fs::File::create(path).unwrap();
-    file.write_all(&mut v).unwrap();
+    file.write_all(&v).unwrap();
     file.flush().unwrap();
   }
 
@@ -985,7 +979,7 @@ impl Mesh {
     v.append(&mut b"\n".to_vec());
 
     let mut file = std::fs::File::create(path).unwrap();
-    file.write_all(&mut v).unwrap();
+    file.write_all(&v).unwrap();
     file.flush().unwrap();
   }
 
