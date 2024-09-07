@@ -16,9 +16,8 @@ and the output will go into the out directory.
 The csg library was started because I like programmatic CAD, having used [OpenSCAD](openscad.org) for several
 years, but not liking the language that much.
 
-I started with a port of [pycsg](https://github.com/timknip/pycsg) and the algorithm works but does not
-always produce watertight meshes. In fact the stl files produced, while still looking ok, are not watertight
-for all but the simplest meshes.
+This is a port of [pycsg](https://github.com/timknip/pycsg) and the algorithm works but does not always produce
+watertight meshes. It appears to be a problem when the inputs to the boolean operations have parts that are coplanar.
 
 ---
 
